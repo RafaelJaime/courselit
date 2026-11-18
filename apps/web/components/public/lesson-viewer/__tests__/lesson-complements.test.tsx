@@ -77,6 +77,13 @@ describe("LessonComplementCards", () => {
         ]);
     });
 
+    it("lets long words and links wrap instead of widening the page", () => {
+        render(<LessonComplementCards complements={[task]} theme={theme} />);
+        const card = screen.getByRole("article");
+        expect(card).toHaveClass("min-w-0");
+        expect(card).toHaveClass("[overflow-wrap:anywhere]");
+    });
+
     it("shows the task's rich text", () => {
         render(<LessonComplementCards complements={[task]} theme={theme} />);
         expect(screen.getByTestId("task-text")).toHaveTextContent("Do it");

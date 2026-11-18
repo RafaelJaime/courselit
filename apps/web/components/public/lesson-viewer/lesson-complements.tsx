@@ -76,7 +76,7 @@ export function LessonComplementCards({
                     <article
                         key={complement.complementId}
                         id={getComplementAnchorId(complement.complementId)}
-                        className="scroll-mt-20 rounded-lg border p-4 flex flex-col gap-3"
+                        className="scroll-mt-20 min-w-0 [overflow-wrap:anywhere] rounded-lg border p-4 flex flex-col gap-3"
                     >
                         <header className="flex items-center gap-2">
                             <Icon
