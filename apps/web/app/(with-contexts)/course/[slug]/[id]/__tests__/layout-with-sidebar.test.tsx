@@ -1125,21 +1125,63 @@ describe("Course sidebar complements and progress", () => {
         expect(screen.getByText("1/2")).toBeInTheDocument();
     });
 
-    it("renders a completion state at the start of each lesson row, inside the link", () => {
+    it("puts the lesson type icon before the title and the completion state after it, all inside the link", () => {
         mockCompletedLessons = ["lesson-2"];
         renderPage(baseCourse(), enrolledProfile);
 
+        const before = (a: Element, b: Element) =>
+            Boolean(
+                a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING,
+            );
         const firstRow = screen.getByText("Lesson one").closest("a")!;
         const secondRow = screen.getByText("Lesson two").closest("a")!;
+        const title = screen.getByText("Lesson two");
+        const typeIcon = secondRow.querySelector(
+            '[data-testid="lesson-icon-video"]',
+        )!;
+        const done = secondRow.querySelector(
+            '[data-testid="status-completed"]',
+        )!;
+
+        expect(typeIcon).not.toBeNull();
+        expect(done).not.toBeNull();
+        expect(before(typeIcon, title)).toBe(true);
+        expect(before(title, done)).toBe(true);
         expect(
             firstRow.querySelector('[data-testid="status-pending"]'),
         ).not.toBeNull();
-        expect(
-            secondRow.querySelector('[data-testid="status-completed"]'),
-        ).not.toBeNull();
-        expect(
-            secondRow.querySelector('[data-testid="lesson-icon-video"]'),
-        ).not.toBeNull();
+    });
+
+    it("lays each lesson row out on one line: type icon, title, state", () => {
+        renderPage(baseCourse(), enrolledProfile);
+        const link = screen.getByText("Lesson one").closest("a")!;
+        expect(link.children).toHaveLength(3);
+        expect(link.children[1]).toHaveTextContent("Lesson one");
+        expect(link.children[1].children).toHaveLength(0);
+    });
+
+    it("shows no Complementos item for lessons without complements, not even (0)", () => {
+        renderPage(
+            baseCourse({
+                groups: [
+                    {
+                        id: "group-1",
+                        name: "First Section",
+                        lessons: [
+                            {
+                                lessonId: "lesson-2",
+                                title: "Lesson two",
+                                type: "video",
+                                requiresEnrollment: true,
+                                complements: [],
+                            },
+                        ],
+                    },
+                ],
+            }),
+            enrolledProfile,
+        );
+        expect(screen.queryByText(/Complementos/)).not.toBeInTheDocument();
     });
 
     it("keeps the lock on lessons that need enrollment for guests", () => {

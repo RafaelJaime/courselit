@@ -25,9 +25,9 @@ export interface SidebarComplementEntry {
 export interface SidebarLessonEntry {
     title: string;
     href: string;
-    /** Completion or lock state, shown at the start of the row. */
+    /** Completion or lock state, shown at the end of the row. */
     icon?: ReactNode;
-    /** The lesson type icon, shown under the title. */
+    /** The lesson type icon, shown at the start of the row. */
     leadingIcon?: ReactNode;
     isActive?: boolean;
     complements?: SidebarComplementEntry[];
@@ -46,15 +46,13 @@ export function SidebarLessonItem({ item }: { item: SidebarLessonEntry }) {
                     className="flex w-full items-start gap-2"
                 >
                     <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
-                        {item.icon}
+                        {item.leadingIcon}
                     </span>
-                    <span className="flex min-w-0 flex-1 flex-col gap-1 text-left">
-                        <span className="whitespace-normal break-words text-sm leading-snug">
-                            {item.title}
-                        </span>
-                        <span className="flex items-center gap-1.5 whitespace-normal text-xs text-muted-foreground">
-                            {item.leadingIcon}
-                        </span>
+                    <span className="min-w-0 flex-1 whitespace-normal break-words text-left text-sm leading-snug">
+                        {item.title}
+                    </span>
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                        {item.icon}
                     </span>
                 </Link>
             </SidebarMenuButton>
