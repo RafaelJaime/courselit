@@ -84,6 +84,14 @@ describe("LessonComplementCards", () => {
         expect(card).toHaveClass("[overflow-wrap:anywhere]");
     });
 
+    it("scales rich-text headings down so a task reads as a card", () => {
+        render(<LessonComplementCards complements={[task]} theme={theme} />);
+        const content = screen.getByTestId("task-content");
+        expect(content.className).toContain("[&_h1]:!normal-case");
+        expect(content.className).toContain("[&_h1]:!text-xl");
+        expect(content.className).toContain("[&_h3]:!text-base");
+    });
+
     it("shows the task's rich text", () => {
         render(<LessonComplementCards complements={[task]} theme={theme} />);
         expect(screen.getByTestId("task-text")).toHaveTextContent("Do it");

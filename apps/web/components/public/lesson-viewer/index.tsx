@@ -479,7 +479,14 @@ export const LessonViewer = ({
                     </>
                 )}
                 {lesson && (isViewerEnrolled || isPreview) && (
-                    <div className="sticky bottom-6 z-20 pointer-events-none w-full flex justify-end pointer-events-auto mt-auto pb-6 pr-6">
+                    <div
+                        className={`w-full flex justify-end mt-auto pb-6 pr-6 ${
+                            lesson.complements?.length
+                                ? // floating buttons would sit on top of the complement cards
+                                  "relative pt-6"
+                                : "sticky bottom-6 z-20 pointer-events-none pointer-events-auto"
+                        }`}
+                    >
                         <div className="flex gap-2">
                             {lesson.prevLesson ? (
                                 <Link

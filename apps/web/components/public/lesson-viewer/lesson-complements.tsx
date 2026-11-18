@@ -51,6 +51,18 @@ function isHttpUrl(value?: string): value is string {
     }
 }
 
+// Headings in a task are section labels inside a card, not page titles, so
+// they drop the theme's display style (huge uppercase) for the body font.
+// Class names are written out in full so Tailwind can see them.
+const TASK_HEADINGS_CLASS_NAME = [
+    "[&_h1]:!font-sans [&_h1]:!normal-case [&_h1]:!font-semibold [&_h1]:!leading-snug [&_h1]:!tracking-normal [&_h1]:!text-xl",
+    "[&_h2]:!font-sans [&_h2]:!normal-case [&_h2]:!font-semibold [&_h2]:!leading-snug [&_h2]:!tracking-normal [&_h2]:!text-lg",
+    "[&_h3]:!font-sans [&_h3]:!normal-case [&_h3]:!font-semibold [&_h3]:!leading-snug [&_h3]:!tracking-normal [&_h3]:!text-base",
+    "[&_h4]:!font-sans [&_h4]:!normal-case [&_h4]:!font-semibold [&_h4]:!leading-snug [&_h4]:!tracking-normal [&_h4]:!text-base",
+    "[&_h5]:!font-sans [&_h5]:!normal-case [&_h5]:!font-semibold [&_h5]:!leading-snug [&_h5]:!tracking-normal [&_h5]:!text-base",
+    "[&_h6]:!font-sans [&_h6]:!normal-case [&_h6]:!font-semibold [&_h6]:!leading-snug [&_h6]:!tracking-normal [&_h6]:!text-base",
+].join(" ");
+
 const actionClassName =
     "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors";
 
@@ -91,14 +103,19 @@ export function LessonComplementCards({
                             {complement.title}
                         </h3>
                         {complement.type === TASK && complement.content && (
-                            <WidgetErrorBoundary widgetName="text-editor">
-                                <TextRenderer
-                                    json={
-                                        complement.content as TextEditorContent
-                                    }
-                                    theme={theme}
-                                />
-                            </WidgetErrorBoundary>
+                            <div
+                                data-testid="task-content"
+                                className={TASK_HEADINGS_CLASS_NAME}
+                            >
+                                <WidgetErrorBoundary widgetName="text-editor">
+                                    <TextRenderer
+                                        json={
+                                            complement.content as TextEditorContent
+                                        }
+                                        theme={theme}
+                                    />
+                                </WidgetErrorBoundary>
+                            </div>
                         )}
                         {complement.type === LINK &&
                             isHttpUrl(complement.url) && (
