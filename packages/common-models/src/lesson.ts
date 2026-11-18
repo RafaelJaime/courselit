@@ -1,4 +1,5 @@
 import { Media } from "./media";
+import type { LessonComplement } from "./lesson-complement";
 import { LessonType } from "./lesson-type";
 import type { Quiz } from "./quiz";
 import type { TextEditorContent } from "./text-editor-content";
@@ -15,6 +16,7 @@ export default interface Lesson {
     downloadable: boolean;
     published: boolean;
     media?: Partial<Media>;
+    complements?: LessonComplement[];
     prevLesson?: string;
     nextLesson?: string;
 }

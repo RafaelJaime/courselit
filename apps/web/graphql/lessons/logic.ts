@@ -38,6 +38,12 @@ import ActivityModel from "@/models/Activity";
 import UserModel from "../../models/User";
 import { replaceTempMediaWithSealedMediaInProseMirrorDoc } from "@/lib/replace-temp-media-with-sealed-media-in-prosemirror-doc";
 import { canManageCourseInContext } from "../courses/permissions";
+import {
+    getComplementMediaIds,
+    getRemovedComplementMediaIds,
+    LessonComplementInput,
+    prepareComplements,
+} from "./complements";
 
 const { permissions, quiz, scorm } = constants;
 
@@ -172,8 +178,12 @@ export const getLessonDetails = async (
     return lesson;
 };
 
-export type LessonWithStringContent = Omit<Lesson, "content"> & {
+export type LessonWithStringContent = Omit<
+    Lesson,
+    "content" | "complements"
+> & {
     content: string;
+    complements?: LessonComplementInput[];
 };
 
 async function sealLessonMedia(media?: Partial<Media> | null) {
@@ -252,6 +262,7 @@ export const updateLesson = async (
         | "requiresEnrollment"
         | "published"
         | "type"
+        | "complements"
     > & { id: string; lessonId: string },
     ctx: GQLContext,
 ) => {
@@ -289,6 +300,18 @@ export const updateLesson = async (
 
     lessonValidator(completeLessonData);
 
+    // Complements are validated (and their media sealed) before anything is saved.
+    const complementsUpdated = Object.prototype.hasOwnProperty.call(
+        lessonData,
+        "complements",
+    );
+    const nextComplements = complementsUpdated
+        ? await prepareComplements(lessonData.complements, ctx, lesson)
+        : undefined;
+    const complementMediaIdsMarkedForDeletion = complementsUpdated
+        ? getRemovedComplementMediaIds(lesson.complements, nextComplements)
+        : [];
+
     // Now apply the partial updates to the lesson document
     const contentMediaIdsMarkedForDeletion: string[] = [];
     if (contentUpdated) {
@@ -311,6 +334,8 @@ export const updateLesson = async (
                     : JSON.parse(lessonData.content);
         } else if (key === "media" && lessonData.media) {
             lesson.media = await sealLessonMedia(lessonData.media);
+        } else if (key === "complements") {
+            lesson.complements = nextComplements;
         } else if (key !== "lessonId" && key !== "id") {
             lesson[key] = lessonData[key];
         }
@@ -320,6 +345,15 @@ export const updateLesson = async (
     }
 
     lesson = await (lesson as any).save();
+
+    // Cleanup runs after the change is persisted and never fails the update.
+    for (const mediaId of complementMediaIdsMarkedForDeletion) {
+        try {
+            await deleteMedia(mediaId);
+        } catch (err: any) {
+            error(err.message, { mediaId, lessonId: lesson.lessonId });
+        }
+    }
     return lesson;
 };
 
@@ -331,6 +365,10 @@ export const deleteLesson = async (id: string, ctx: GQLContext) => {
 
         if (lesson.media?.mediaId) {
             cleanupTasks.push(deleteMedia(lesson.media.mediaId));
+        }
+
+        for (const mediaId of getComplementMediaIds(lesson)) {
+            cleanupTasks.push(deleteMedia(mediaId));
         }
 
         if (lesson.type === Constants.LessonType.TEXT && lesson.content) {
@@ -419,6 +457,7 @@ export const getAllLessons = async (
         courseId: 1,
         groupId: 1,
         published: 1,
+        complements: 1,
     });
 
     return lessons;

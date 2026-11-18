@@ -122,6 +122,11 @@ export const LessonType = {
     QUIZ: "quiz",
     SCORM: "scorm",
 } as const;
+export const LessonComplementType = {
+    TASK: "task",
+    LINK: "link",
+    DOCUMENT: "document",
+} as const;
 export const ActivityType = {
     ENROLLED: "enrolled",
     PURCHASED: "purchased",

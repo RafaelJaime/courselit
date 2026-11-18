@@ -1,4 +1,6 @@
 import {
+    LessonComplement,
+    Constants,
     Media,
     Quiz,
     TextEditorContent,
@@ -26,6 +28,7 @@ export interface Lesson {
         | typeof scorm;
     content?: Quiz | TextEditorContent | ScormContent | { value: string };
     media?: Media;
+    complements?: LessonComplement[];
     downloadable: boolean;
     creatorId: string;
     courseId: string;
@@ -33,6 +36,26 @@ export interface Lesson {
     published: boolean;
     groupId: string;
 }
+
+const LessonComplementSchema = new mongoose.Schema(
+    {
+        complementId: {
+            type: String,
+            required: true,
+            default: generateUniqueId,
+        },
+        type: {
+            type: String,
+            required: true,
+            enum: Object.values(Constants.LessonComplementType),
+        },
+        title: { type: String, required: true },
+        content: { type: mongoose.Schema.Types.Mixed },
+        url: String,
+        media: MediaSchema,
+    },
+    { _id: false },
+);
 
 const LessonSchema = new mongoose.Schema<Lesson>({
     domain: { type: mongoose.Schema.Types.ObjectId, required: true },
@@ -45,6 +68,7 @@ const LessonSchema = new mongoose.Schema<Lesson>({
     },
     content: { type: mongoose.Schema.Types.Mixed, default: {} },
     media: MediaSchema,
+    complements: { type: [LessonComplementSchema], default: undefined },
     downloadable: { type: Boolean, default: false },
     creatorId: { type: String, required: true },
     courseId: { type: String, required: true },

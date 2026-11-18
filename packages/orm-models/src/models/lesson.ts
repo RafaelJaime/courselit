@@ -1,4 +1,5 @@
 import {
+    LessonComplement,
     LessonType,
     Media,
     Quiz,
@@ -18,6 +19,7 @@ export interface InternalLesson {
     type: LessonType;
     content?: Quiz | TextEditorContent | ScormContent | { value: string };
     media?: Media;
+    complements?: LessonComplement[];
     downloadable: boolean;
     creatorId: string;
     courseId: string;
@@ -25,6 +27,26 @@ export interface InternalLesson {
     published: boolean;
     groupId: string;
 }
+
+export const LessonComplementSchema = new mongoose.Schema(
+    {
+        complementId: {
+            type: String,
+            required: true,
+            default: generateUniqueId,
+        },
+        type: {
+            type: String,
+            required: true,
+            enum: Object.values(Constants.LessonComplementType),
+        },
+        title: { type: String, required: true },
+        content: { type: mongoose.Schema.Types.Mixed },
+        url: String,
+        media: MediaSchema,
+    },
+    { _id: false },
+);
 
 export const LessonSchema = new mongoose.Schema<InternalLesson>({
     domain: { type: mongoose.Schema.Types.ObjectId, required: true },
@@ -37,6 +59,7 @@ export const LessonSchema = new mongoose.Schema<InternalLesson>({
     },
     content: { type: mongoose.Schema.Types.Mixed, default: {} },
     media: MediaSchema,
+    complements: { type: [LessonComplementSchema], default: undefined },
     downloadable: { type: Boolean, default: false },
     creatorId: { type: String, required: true },
     courseId: { type: String, required: true },

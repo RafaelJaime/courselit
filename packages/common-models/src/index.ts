@@ -32,6 +32,10 @@ export type {
 } from "./alignment";
 export type { default as WidgetDefaultSettings } from "./widget-default-settings";
 export type { LessonType } from "./lesson-type";
+export type {
+    LessonComplement,
+    LessonComplementType,
+} from "./lesson-complement";
 export type { Mail } from "./mail";
 export type { Typeface } from "./typeface";
 export type { default as UserWithAdminFields } from "./user-with-admin-fields";

@@ -8,11 +8,14 @@ import {
     GraphQLBoolean,
     GraphQLInt,
     GraphQLFloat,
+    GraphQLList,
 } from "graphql";
 import constants from "../../config/constants";
 import mediaTypes from "../media/types";
 import { getMedia } from "../media/logic";
 import { GraphQLJSONObject } from "graphql-type-json";
+import { getLessonComplements } from "./complements";
+import GQLContext from "../../models/GQLContext";
 
 const { text, audio, video, pdf, quiz, file, embed, scorm } = constants;
 
@@ -33,6 +36,46 @@ const lessontypeType = new GraphQLEnumType({
         FILE: { value: file },
         EMBED: { value: embed },
         SCORM: { value: scorm },
+    },
+});
+
+/**
+ * A task, link or document attached to a lesson. Document files are only
+ * resolved (as signed URLs) for users who can access the lesson's course.
+ */
+const lessonComplementType = new GraphQLObjectType({
+    name: "LessonComplement",
+    fields: {
+        complementId: { type: new GraphQLNonNull(GraphQLString) },
+        type: { type: new GraphQLNonNull(GraphQLString) },
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        content: { type: GraphQLJSONObject },
+        url: { type: GraphQLString },
+        media: { type: mediaTypes.mediaType },
+    },
+});
+
+/**
+ * Only what the course sidebar needs: no content, URLs or files.
+ */
+const lessonComplementMetaType = new GraphQLObjectType({
+    name: "LessonComplementMeta",
+    fields: {
+        complementId: { type: new GraphQLNonNull(GraphQLString) },
+        type: { type: new GraphQLNonNull(GraphQLString) },
+        title: { type: new GraphQLNonNull(GraphQLString) },
+    },
+});
+
+const lessonComplementInputType = new GraphQLInputObjectType({
+    name: "LessonComplementInput",
+    fields: {
+        complementId: { type: GraphQLString },
+        type: { type: new GraphQLNonNull(GraphQLString) },
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        content: { type: GraphQLString },
+        url: { type: GraphQLString },
+        media: { type: mediaTypes.mediaInputType },
     },
 });
 
@@ -58,6 +101,11 @@ const lessonType = new GraphQLObjectType({
             type: mediaTypes.mediaType,
             resolve: (lesson, _, __, ___) => getMedia(lesson.media),
         },
+        complements: {
+            type: new GraphQLList(lessonComplementType),
+            resolve: (lesson, _, ctx: GQLContext) =>
+                getLessonComplements(lesson, ctx),
+        },
         prevLesson: { type: GraphQLString },
         nextLesson: { type: GraphQLString },
     },
@@ -80,6 +128,7 @@ const lessonMetaType = new GraphQLObjectType({
         published: { type: GraphQLBoolean },
         courseId: { type: new GraphQLNonNull(GraphQLID) },
         groupId: { type: new GraphQLNonNull(GraphQLID) },
+        complements: { type: new GraphQLList(lessonComplementMetaType) },
     },
 });
 
@@ -114,6 +163,7 @@ const lessonUpdateType = new GraphQLInputObjectType({
         title: { type: GraphQLString },
         content: { type: GraphQLString },
         media: { type: mediaTypes.mediaInputType },
+        complements: { type: new GraphQLList(lessonComplementInputType) },
         downloadable: { type: GraphQLBoolean },
         requiresEnrollment: {
             description: DESCRIPTION_REQUIRES_ENROLLMENT,
