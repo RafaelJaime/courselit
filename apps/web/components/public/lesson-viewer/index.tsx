@@ -35,6 +35,10 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, ArrowDownward } from "@courselit/icons";
 import { isEnrolled, isLessonCompleted } from "../../../ui-lib/utils";
 import LessonEmbedViewer from "./embed-viewer";
+import {
+    LessonComplementCards,
+    getComplementAnchorId,
+} from "./lesson-complements";
 import QuizViewer from "./quiz-viewer";
 import ScormViewer from "./scorm-viewer";
 import { getUserProfile } from "@/app/(with-contexts)/helpers";
@@ -116,6 +120,24 @@ export const LessonViewer = ({
         }
     }, [lessonId, viewerSessionParams.preview]);
 
+    // Sidebar links point at a complement with a #complement-<id> anchor. The
+    // complement is rendered only after the lesson loads, so scroll to it then.
+    useEffect(() => {
+        if (!lesson?.complements?.length || typeof window === "undefined") {
+            return;
+        }
+        const hash = window.location.hash.slice(1);
+        const target = lesson.complements.find(
+            (complement) =>
+                getComplementAnchorId(complement.complementId) === hash,
+        );
+        if (target) {
+            document
+                .getElementById(hash)
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [lesson]);
+
     const loadLesson = async (id: string) => {
         const query = `
             query ($productId: String!, $lessonId: String!, $preview: Boolean) {
@@ -136,6 +158,17 @@ export const LessonViewer = ({
                     },
                     requiresEnrollment,
                     courseId,
+                    complements {
+                        complementId
+                        type
+                        title
+                        content
+                        url
+                        media {
+                            originalFileName
+                            file
+                        }
+                    }
                     prevLesson,
                     nextLesson
                 }
@@ -414,6 +447,10 @@ export const LessonViewer = ({
                                     }
                                 />
                             )}
+                        <LessonComplementCards
+                            complements={lesson.complements}
+                            theme={theme.theme}
+                        />
                         {isViewerEnrolled && !isPreview && (
                             <div className="mt-8 flex flex-col gap-4">
                                 <div className="flex justify-start">

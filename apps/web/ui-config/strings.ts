@@ -924,3 +924,12 @@ export const LESSON_COMPLEMENT_ERROR_URL = "Enter a valid http(s) URL.";
 export const LESSON_COMPLEMENT_ERROR_FILE = "Upload a file.";
 export const LESSON_COMPLEMENT_ERROR_TASK = "Write the task instructions.";
 export const LESSON_COMPLEMENT_SAVED = "Complements updated";
+
+// Lesson complements (course viewer, shown in Spanish)
+export const LESSON_COMPLEMENTS_VIEWER_HEADER = "Complementos";
+export const LESSON_COMPLEMENT_VIEWER_TYPE_TASK = "Tarea";
+export const LESSON_COMPLEMENT_VIEWER_TYPE_LINK = "Enlace";
+export const LESSON_COMPLEMENT_VIEWER_TYPE_DOCUMENT = "Documento";
+export const LESSON_COMPLEMENT_VIEWER_DOWNLOAD = "Descargar";
+export const LESSON_COMPLEMENT_VIEWER_OPEN_LINK = "Abrir enlace";
+export const LESSON_COMPLEMENT_VIEWER_UNAVAILABLE = "No disponible";
