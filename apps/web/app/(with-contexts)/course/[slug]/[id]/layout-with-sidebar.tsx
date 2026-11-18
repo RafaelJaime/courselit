@@ -22,6 +22,7 @@ import {
     AddressContext,
 } from "@components/contexts";
 import { CourseFrontend, GroupWithLessons } from "./helpers";
+import { SidebarLessonEntry, SidebarLessonItem } from "./sidebar-lesson-item";
 import {
     Sidebar,
     SidebarContent,
@@ -369,6 +370,14 @@ export function AppSidebar({
                                                         </Tooltip>
                                                     </span>
                                                 </TooltipProvider>
+                                                {item.progress && (
+                                                    <span
+                                                        className="shrink-0 text-xs tabular-nums text-muted-foreground"
+                                                        aria-label={`${item.progress.completed} de ${item.progress.total}`}
+                                                    >
+                                                        {`${item.progress.completed}/${item.progress.total}`}
+                                                    </span>
+                                                )}
                                                 {item.badge?.text && (
                                                     <Tooltip>
                                                         <TooltipTrigger className="text-muted-foreground">
@@ -405,53 +414,11 @@ export function AppSidebar({
                                         <SidebarGroupContent>
                                             <SidebarMenu className="ml-0 border-l-0 px-1.5">
                                                 {item.items.map(
-                                                    (item, index) => (
-                                                        <SidebarMenuItem
+                                                    (lessonItem, index) => (
+                                                        <SidebarLessonItem
                                                             key={index}
-                                                        >
-                                                            <SidebarMenuButton
-                                                                asChild
-                                                                isActive={
-                                                                    item.isActive
-                                                                }
-                                                                className="text-foreground"
-                                                            >
-                                                                <Link
-                                                                    href={
-                                                                        item.href
-                                                                    }
-                                                                    className="flex items-center gap-2 w-full"
-                                                                >
-                                                                    {
-                                                                        item.leadingIcon
-                                                                    }
-                                                                    <TooltipProvider
-                                                                        delayDuration={
-                                                                            1000
-                                                                        }
-                                                                    >
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger
-                                                                                asChild
-                                                                            >
-                                                                                <span className="flex-1 text-left">
-                                                                                    {truncate(
-                                                                                        item.title,
-                                                                                        22,
-                                                                                    )}
-                                                                                </span>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>
-                                                                                {
-                                                                                    item.title
-                                                                                }
-                                                                            </TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
-                                                                    {item.icon}
-                                                                </Link>
-                                                            </SidebarMenuButton>
-                                                        </SidebarMenuItem>
+                                                            item={lessonItem}
+                                                        />
                                                     ),
                                                 )}
                                             </SidebarMenu>
@@ -507,13 +474,9 @@ interface SidebarItem {
         description: string;
     };
     isActive?: boolean;
-    items?: {
-        title: string;
-        href: string;
-        icon?: ReactNode;
-        leadingIcon?: ReactNode;
-        isActive?: boolean;
-    }[];
+    /** Lessons completed out of the lessons in the section (enrolled learners). */
+    progress?: { completed: number; total: number };
+    items?: SidebarLessonEntry[];
 }
 
 export function generateSideBarItems(
@@ -604,13 +567,20 @@ export function generateSideBarItems(
                     ) : undefined;
                 }
             }
+            const lessonHref = appendCourseViewerSessionParamsToHref(
+                `/course/${course.slug}/${course.courseId}/${lesson.lessonId}`,
+                viewerSessionParams,
+            );
             groupItem.items!.push({
                 title: lesson.title,
-                href: appendCourseViewerSessionParamsToHref(
-                    `/course/${course.slug}/${course.courseId}/${lesson.lessonId}`,
-                    viewerSessionParams,
-                ),
+                href: lessonHref,
                 isActive,
+                complements: (lesson.complements ?? []).map((complement) => ({
+                    complementId: complement.complementId,
+                    type: complement.type,
+                    title: complement.title,
+                    href: `${lessonHref}#complement-${complement.complementId}`,
+                })),
                 leadingIcon: (
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                         <LessonIcon type={lesson.type} />
@@ -618,6 +588,23 @@ export function generateSideBarItems(
                 ),
                 icon: lessonStatusIcon,
             });
+        }
+
+        if (
+            !isPreview &&
+            profile?.userId &&
+            isEnrolled(course.courseId, profile as Profile)
+        ) {
+            groupItem.progress = {
+                completed: group.lessons.filter((lesson) =>
+                    isLessonCompleted({
+                        courseId: course.courseId,
+                        lessonId: lesson.lessonId,
+                        profile: profile as Profile,
+                    }),
+                ).length,
+                total: group.lessons.length,
+            };
         }
 
         items.push(groupItem);

@@ -1,6 +1,7 @@
 let mockPathname = "/course/test-course/course-1";
 let mockSearchParams = new URLSearchParams();
 let mockIsEnrolled = true;
+let mockCompletedLessons: string[] = [];
 
 jest.mock("next/navigation", () => ({
     usePathname: () => mockPathname,
@@ -111,16 +112,19 @@ jest.mock("@courselit/text-editor", () => ({
 }));
 
 jest.mock("@courselit/icons", () => ({
-    CheckCircled: () => null,
-    Circle: () => null,
-    Lock: () => null,
+    CheckCircled: () => <span data-testid="status-completed" />,
+    Circle: () => <span data-testid="status-pending" />,
+    Lock: () => <span data-testid="status-locked" />,
 }));
 
 jest.mock("lucide-react", () => ({
     BookOpen: () => null,
     ChevronRight: () => null,
     Clock: () => null,
+    FileText: () => null,
     Folder: () => null,
+    Link2: () => null,
+    ListChecks: () => null,
     LogOutIcon: () => null,
     MessageSquare: () => null,
 }));
@@ -132,14 +136,15 @@ jest.mock("@courselit/page-primitives", () => ({
 jest.mock("@ui-lib/utils", () => ({
     formattedLocaleDate: () => "Mar 22, 2026",
     isEnrolled: () => mockIsEnrolled,
-    isLessonCompleted: () => false,
+    isLessonCompleted: ({ lessonId }: { lessonId: string }) =>
+        mockCompletedLessons.includes(lessonId),
 }));
 
 import { Constants, Profile } from "@courselit/common-models";
 import ProductPage, { generateSideBarItems } from "../layout-with-sidebar";
 import { CourseFrontend } from "../helpers";
 import constants from "@/config/constants";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ProfileContext } from "@components/contexts";
 
 describe("generateSideBarItems", () => {
@@ -150,6 +155,7 @@ describe("generateSideBarItems", () => {
         mockPathname = "/course/test-course/course-1";
         mockSearchParams = new URLSearchParams();
         mockIsEnrolled = true;
+        mockCompletedLessons = [];
         Date.now = jest.fn(() =>
             new Date("2026-03-22T00:00:00.000Z").getTime(),
         );
@@ -963,6 +969,229 @@ describe("generateSideBarItems", () => {
         );
 
         expect(items[1].badge?.text).toBe("2 days");
+    });
+});
+
+describe("Course sidebar complements and progress", () => {
+    const baseCourse = (overrides: Record<string, unknown> = {}) =>
+        ({
+            title: "Course",
+            description: "",
+            featuredImage: undefined,
+            updatedAt: new Date().toISOString(),
+            creatorId: "creator-1",
+            slug: "test-course",
+            cost: 0,
+            courseId: "course-1",
+            tags: [],
+            paymentPlans: [],
+            defaultPaymentPlan: "",
+            firstLesson: "lesson-1",
+            isPreview: false,
+            groups: [
+                {
+                    id: "group-1",
+                    name: "First Section",
+                    lessons: [
+                        {
+                            lessonId: "lesson-1",
+                            title: "Lesson one",
+                            type: "text",
+                            requiresEnrollment: true,
+                            complements: [
+                                {
+                                    complementId: "c1",
+                                    type: "task",
+                                    title: "Tarea 1",
+                                },
+                                {
+                                    complementId: "c2",
+                                    type: "link",
+                                    title: "Enlace 1",
+                                },
+                            ],
+                        },
+                        {
+                            lessonId: "lesson-2",
+                            title: "Lesson two",
+                            type: "video",
+                            requiresEnrollment: true,
+                        },
+                    ],
+                },
+            ],
+            ...overrides,
+        }) as unknown as CourseFrontend;
+
+    const enrolledProfile = {
+        userId: "user-1",
+        purchases: [{ courseId: "course-1", accessibleGroups: ["group-1"] }],
+    } as unknown as Profile;
+
+    const renderPage = (course: CourseFrontend, profile: any) =>
+        render(
+            <ProfileContext.Provider value={{ profile } as any}>
+                <ProductPage product={course}>
+                    <div>Body</div>
+                </ProductPage>
+            </ProfileContext.Provider>,
+        );
+
+    beforeEach(() => {
+        mockPathname = "/course/test-course/course-1";
+        mockSearchParams = new URLSearchParams();
+        mockIsEnrolled = true;
+        mockCompletedLessons = [];
+    });
+
+    it("lists each lesson's complements with an anchor to the lesson page", () => {
+        const items = generateSideBarItems(
+            baseCourse(),
+            enrolledProfile,
+            "/course/test-course/course-1",
+        );
+        const lessons = items.find((i) => i.title === "First Section")!.items!;
+
+        expect(lessons[0].complements).toEqual([
+            {
+                complementId: "c1",
+                type: "task",
+                title: "Tarea 1",
+                href: "/course/test-course/course-1/lesson-1#complement-c1",
+            },
+            {
+                complementId: "c2",
+                type: "link",
+                title: "Enlace 1",
+                href: "/course/test-course/course-1/lesson-1#complement-c2",
+            },
+        ]);
+        expect(lessons[1].complements).toEqual([]);
+    });
+
+    it("keeps preview params in complement hrefs, before the anchor", () => {
+        const items = generateSideBarItems(
+            baseCourse({ isPreview: true }),
+            enrolledProfile,
+            "/course/test-course/course-1",
+            { preview: true, returnTo: undefined } as any,
+        );
+        const href = items.find((i) => i.title === "First Section")!.items![0]
+            .complements![0].href;
+        expect(href).toMatch(/lesson-1\?[^#]*preview=true[^#]*#complement-c1$/);
+    });
+
+    it("counts completed lessons per section for enrolled learners", () => {
+        mockCompletedLessons = ["lesson-2"];
+        const items = generateSideBarItems(
+            baseCourse(),
+            enrolledProfile,
+            "/course/test-course/course-1",
+        );
+        expect(
+            items.find((i) => i.title === "First Section")!.progress,
+        ).toEqual({ completed: 1, total: 2 });
+    });
+
+    it.each([
+        ["guests", {}, true],
+        ["learners who are not enrolled", { userId: "user-2" }, false],
+    ])("shows no section progress to %s", (_label, profile, enrolled) => {
+        mockIsEnrolled = enrolled;
+        const items = generateSideBarItems(
+            baseCourse(),
+            profile as Profile,
+            "/course/test-course/course-1",
+        );
+        expect(
+            items.find((i) => i.title === "First Section")!.progress,
+        ).toBeUndefined();
+    });
+
+    it("shows no section progress in preview mode", () => {
+        const items = generateSideBarItems(
+            baseCourse({ isPreview: true }),
+            enrolledProfile,
+            "/course/test-course/course-1",
+        );
+        expect(
+            items.find((i) => i.title === "First Section")!.progress,
+        ).toBeUndefined();
+    });
+
+    it("renders section progress as x/y", () => {
+        mockCompletedLessons = ["lesson-2"];
+        renderPage(baseCourse(), enrolledProfile);
+        expect(screen.getByText("1/2")).toBeInTheDocument();
+    });
+
+    it("renders a completion state at the start of each lesson row, inside the link", () => {
+        mockCompletedLessons = ["lesson-2"];
+        renderPage(baseCourse(), enrolledProfile);
+
+        const firstRow = screen.getByText("Lesson one").closest("a")!;
+        const secondRow = screen.getByText("Lesson two").closest("a")!;
+        expect(
+            firstRow.querySelector('[data-testid="status-pending"]'),
+        ).not.toBeNull();
+        expect(
+            secondRow.querySelector('[data-testid="status-completed"]'),
+        ).not.toBeNull();
+        expect(
+            secondRow.querySelector('[data-testid="lesson-icon-video"]'),
+        ).not.toBeNull();
+    });
+
+    it("keeps the lock on lessons that need enrollment for guests", () => {
+        renderPage(baseCourse(), {});
+        const row = screen.getByText("Lesson one").closest("a")!;
+        expect(
+            row.querySelector('[data-testid="status-locked"]'),
+        ).not.toBeNull();
+    });
+
+    it("shows a collapsed Complementos (n) toggle only under lessons that have complements", () => {
+        renderPage(baseCourse(), enrolledProfile);
+
+        const toggle = screen.getByRole("button", {
+            name: /Complementos \(2\)/,
+        });
+        expect(toggle).toHaveAttribute("aria-expanded", "false");
+        expect(screen.queryByText("Tarea 1")).not.toBeInTheDocument();
+        expect(
+            screen.getAllByRole("button", { name: /Complementos/ }),
+        ).toHaveLength(1);
+    });
+
+    it("expands to links that jump to each complement", () => {
+        renderPage(baseCourse(), enrolledProfile);
+
+        fireEvent.click(
+            screen.getByRole("button", { name: /Complementos \(2\)/ }),
+        );
+
+        expect(
+            screen.getByRole("button", { name: /Complementos \(2\)/ }),
+        ).toHaveAttribute("aria-expanded", "true");
+        expect(screen.getByRole("link", { name: /Tarea 1/ })).toHaveAttribute(
+            "href",
+            "/course/test-course/course-1/lesson-1#complement-c1",
+        );
+        expect(screen.getByRole("link", { name: /Enlace 1/ })).toHaveAttribute(
+            "href",
+            "/course/test-course/course-1/lesson-1#complement-c2",
+        );
+    });
+
+    it("opens the complements of the lesson being viewed", () => {
+        mockPathname = "/course/test-course/course-1/lesson-1";
+        renderPage(baseCourse(), enrolledProfile);
+        expect(
+            screen.getByRole("button", { name: /Complementos \(2\)/ }),
+        ).toHaveAttribute("aria-expanded", "true");
+        expect(
+            screen.getByRole("link", { name: /Tarea 1/ }),
+        ).toBeInTheDocument();
     });
 });
 

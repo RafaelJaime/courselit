@@ -70,6 +70,11 @@ export const getProduct = async (
                             requiresEnrollment,
                             courseId,
                             groupId,
+                            complements {
+                                complementId
+                                type
+                                title
+                            }
                         },
                         tags,
                         firstLesson
