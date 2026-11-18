@@ -246,6 +246,14 @@ describe("LessonComplementsEditor", () => {
         expect(doc.media.file).toBeUndefined();
     });
 
+    it("shows the name of the uploaded file before saving", () => {
+        renderEditor([]);
+        fireEvent.click(screen.getByRole("button", { name: "Add document" }));
+        expect(screen.queryByText("guide.pdf")).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", { name: "Upload file" }));
+        expect(screen.getByText("guide.pdf")).toBeInTheDocument();
+    });
+
     it("requires a file for documents", async () => {
         renderEditor([]);
         fireEvent.click(screen.getByRole("button", { name: "Add document" }));

@@ -442,6 +442,11 @@ export function LessonComplementsEditor({
                                 address={address}
                                 type="lesson"
                             />
+                            {draft.media?.originalFileName && (
+                                <p className="text-sm text-muted-foreground break-all">
+                                    {draft.media.originalFileName}
+                                </p>
+                            )}
                             {errors.file && (
                                 <p className="text-sm text-red-500">
                                     {errors.file}
