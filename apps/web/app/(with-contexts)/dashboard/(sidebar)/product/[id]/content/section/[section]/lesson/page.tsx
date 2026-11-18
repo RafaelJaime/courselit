@@ -63,6 +63,7 @@ import { Separator } from "@components/ui/separator";
 import { emptyDoc as TextEditorEmptyDoc } from "@courselit/text-editor";
 import { LessonSkeleton } from "./skeleton";
 import { ScormLessonUpload } from "./scorm-lesson-upload";
+import { LessonComplementsEditor } from "./lesson-complements";
 import {
     Tooltip,
     TooltipContent,
@@ -184,7 +185,23 @@ export default function LessonPage() {
                     },
                     requiresEnrollment,
                     published,
-                    lessonId
+                    lessonId,
+                    complements {
+                        complementId
+                        type
+                        title
+                        content
+                        url
+                        media {
+                            mediaId
+                            originalFileName
+                            mimeType
+                            size
+                            access
+                            thumbnail
+                            caption
+                        }
+                    }
                 }
             }
         `;
@@ -746,6 +763,18 @@ export default function LessonPage() {
                             </div>
                         </>
                     )}
+                    {product?.type?.toLowerCase() ===
+                        Constants.CourseType.COURSE &&
+                        lesson.type !== Constants.LessonType.QUIZ &&
+                        lesson.lessonId && (
+                            <>
+                                <Separator />
+                                <LessonComplementsEditor
+                                    lessonId={lesson.lessonId}
+                                    complements={lesson.complements}
+                                />
+                            </>
+                        )}
                     {lesson.type === Constants.LessonType.SCORM &&
                         lesson.lessonId && (
                             <>

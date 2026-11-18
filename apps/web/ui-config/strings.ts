@@ -901,3 +901,26 @@ export const LESSON_CONTENT_LABEL = "Content";
 export const EMAIL_EDITOR_EMAIL_EDIT_HEADER = "Editing email";
 export const EMAIL_EDITOR_TEMPLATE_EDIT_HEADER = "Editing template";
 export const LOGIN_FORM_PERSONAL_INFORMATION_LABEL = "Personal Information";
+
+// Lesson complements (dashboard editor)
+export const LESSON_COMPLEMENTS_HEADER = "Complements";
+export const LESSON_COMPLEMENTS_DESCRIPTION =
+    "Tasks, links and documents shown with this lesson. Changes here are saved right away.";
+export const LESSON_COMPLEMENTS_EMPTY = "No complements yet.";
+export const LESSON_COMPLEMENT_TYPE_TASK = "Task";
+export const LESSON_COMPLEMENT_TYPE_LINK = "Link";
+export const LESSON_COMPLEMENT_TYPE_DOCUMENT = "Document";
+export const LESSON_COMPLEMENT_ADD_TASK = "Add task";
+export const LESSON_COMPLEMENT_ADD_LINK = "Add link";
+export const LESSON_COMPLEMENT_ADD_DOCUMENT = "Add document";
+export const LESSON_COMPLEMENT_TITLE_LABEL = "Title";
+export const LESSON_COMPLEMENT_URL_LABEL = "URL";
+export const LESSON_COMPLEMENT_TASK_LABEL = "Instructions";
+export const LESSON_COMPLEMENT_DOCUMENT_LABEL = "File";
+export const LESSON_COMPLEMENT_SAVE = "Save complement";
+export const LESSON_COMPLEMENT_CANCEL = "Cancel";
+export const LESSON_COMPLEMENT_ERROR_TITLE = "Enter a title.";
+export const LESSON_COMPLEMENT_ERROR_URL = "Enter a valid http(s) URL.";
+export const LESSON_COMPLEMENT_ERROR_FILE = "Upload a file.";
+export const LESSON_COMPLEMENT_ERROR_TASK = "Write the task instructions.";
+export const LESSON_COMPLEMENT_SAVED = "Complements updated";

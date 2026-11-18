@@ -85,6 +85,14 @@ jest.mock("../lesson-content-renderer", () => ({
     ),
 }));
 
+jest.mock("../lesson-complements", () => ({
+    LessonComplementsEditor: ({ lessonId, complements }: any) => (
+        <div data-testid="complements-editor">
+            {lessonId}:{(complements || []).map((c: any) => c.title).join(",")}
+        </div>
+    ),
+}));
+
 jest.mock("@components/ui/button", () => ({
     Button: ({ onClick, children, type }: any) => (
         <button onClick={onClick} type={type} data-testid="button">
@@ -340,6 +348,46 @@ describe("LessonPage", () => {
     });
 
     describe("Editing existing lessons", () => {
+        const loadLessonResponse = (complements?: any[]) => {
+            const mockExec = jest.fn().mockResolvedValue({
+                lesson: {
+                    lessonId: "lesson-123",
+                    title: "Existing TEXT Lesson",
+                    type: "TEXT",
+                    content: { type: "doc", content: [] },
+                    requiresEnrollment: true,
+                    complements,
+                },
+            });
+            (FetchBuilder as unknown as jest.Mock).mockImplementation(() => ({
+                setUrl: jest.fn().mockReturnThis(),
+                setPayload: jest.fn().mockReturnThis(),
+                setIsGraphQLEndpoint: jest.fn().mockReturnThis(),
+                build: jest.fn().mockReturnThis(),
+                exec: mockExec,
+            }));
+        };
+
+        it("shows the complements editor with the lesson's complements", async () => {
+            mockLessonId = "lesson-123";
+            loadLessonResponse([
+                { complementId: "c1", type: "link", title: "Reading" },
+            ]);
+
+            render(<LessonPage />, { wrapper });
+
+            expect(
+                await screen.findByTestId("complements-editor"),
+            ).toHaveTextContent("lesson-123:Reading");
+        });
+
+        it("does not show the complements editor while creating a lesson", () => {
+            render(<LessonPage />, { wrapper });
+            expect(
+                screen.queryByTestId("complements-editor"),
+            ).not.toBeInTheDocument();
+        });
+
         it("loads and edits a TEXT lesson successfully", async () => {
             mockLessonId = "lesson-123";
             const mockExec = jest
