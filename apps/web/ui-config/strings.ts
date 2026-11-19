@@ -240,6 +240,11 @@ export const BTN_LOGIN_GET_CODE = "Get code";
 export const LOGIN_CODE_INTIMATION_MESSAGE =
     "Enter the code sent to your email";
 export const LOGIN_FORM_DISCLAIMER = "By submitting, you accept the ";
+export const LOGIN_PASSWORD_TOGGLE = "Entrar con contraseña";
+export const LOGIN_PASSWORD_BACK_TO_CODE = "Usar código por email";
+export const LOGIN_PASSWORD_PLACEHOLDER = "Contraseña";
+export const BTN_LOGIN_PASSWORD = "Entrar";
+export const LOGIN_PASSWORD_ERROR = "Correo o contraseña incorrectos";
 export const SIGNUP_SECTION_HEADER = "Create an account";
 export const SIGNUP_SECTION_BUTTON = "Join";
 export const MEDIA_MANAGER_PAGE_HEADING = "Media";

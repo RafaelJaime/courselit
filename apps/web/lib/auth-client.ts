@@ -17,6 +17,7 @@ type AuthClient = {
     };
     signIn: {
         emailOtp: (input: { email: string; otp: string }) => AuthClientResult;
+        email: (input: { email: string; password: string }) => AuthClientResult;
         sso: (input: {
             providerId: string;
             callbackURL?: string;

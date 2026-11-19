@@ -27,6 +27,11 @@ import {
     LOGIN_FORM_DISCLAIMER,
     LOADING,
     TOAST_TITLE_ERROR,
+    LOGIN_PASSWORD_TOGGLE,
+    LOGIN_PASSWORD_BACK_TO_CODE,
+    LOGIN_PASSWORD_PLACEHOLDER,
+    BTN_LOGIN_PASSWORD,
+    LOGIN_PASSWORD_ERROR,
 } from "@/ui-config/strings";
 import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
@@ -51,6 +56,8 @@ export default function LoginForm({
     const [showCode, setShowCode] = useState(false);
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
+    const [usePassword, setUsePassword] = useState(false);
+    const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
@@ -153,6 +160,36 @@ export default function LoginForm({
         }
     };
 
+    const signInWithPassword = async function (e: FormEvent) {
+        e.preventDefault();
+        setError("");
+        try {
+            setLoading(true);
+            const { error } = await authClient.signIn.email({
+                email: email.trim().toLowerCase(),
+                password,
+            });
+            if (error) {
+                setError(LOGIN_PASSWORD_ERROR);
+            } else {
+                window.location.href =
+                    redirectTo ||
+                    getRedirectURLBasedOnProfile(
+                        await getUserProfile(address.backend),
+                    );
+            }
+        } catch (err) {
+            console.error("Error during password sign in:", err);
+            toast({
+                title: TOAST_TITLE_ERROR,
+                description: "An unexpected error occurred. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getRedirectURLBasedOnProfile = (profile: Profile) => {
         if (
             profile?.userId &&
@@ -220,7 +257,7 @@ export default function LoginForm({
                                         </div>
                                     </div>
                                 )}
-                                {!showCode && (
+                                {!showCode && !usePassword && (
                                     <div>
                                         <Text1
                                             theme={theme.theme}
@@ -251,6 +288,80 @@ export default function LoginForm({
                                                     : BTN_LOGIN_GET_CODE}
                                             </Button>
                                         </Form>
+                                        <div className="flex justify-center mt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setError("");
+                                                    setUsePassword(true);
+                                                }}
+                                            >
+                                                <Caption
+                                                    theme={theme.theme}
+                                                    className="underline"
+                                                >
+                                                    {LOGIN_PASSWORD_TOGGLE}
+                                                </Caption>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                {!showCode && usePassword && (
+                                    <div>
+                                        <Form
+                                            onSubmit={signInWithPassword}
+                                            className="flex flex-col gap-4 w-full lg:w-[360px] mx-auto"
+                                        >
+                                            <Input
+                                                type="email"
+                                                value={email}
+                                                placeholder="Enter your email"
+                                                required={true}
+                                                onChange={(e) =>
+                                                    setEmail(e.target.value)
+                                                }
+                                                theme={theme.theme}
+                                            />
+                                            <Input
+                                                type="password"
+                                                value={password}
+                                                placeholder={
+                                                    LOGIN_PASSWORD_PLACEHOLDER
+                                                }
+                                                required={true}
+                                                autoComplete="current-password"
+                                                onChange={(e) =>
+                                                    setPassword(e.target.value)
+                                                }
+                                                theme={theme.theme}
+                                            />
+                                            <Button
+                                                theme={theme.theme}
+                                                disabled={loading}
+                                            >
+                                                {loading
+                                                    ? LOADING
+                                                    : BTN_LOGIN_PASSWORD}
+                                            </Button>
+                                        </Form>
+                                        <div className="flex justify-center mt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setError("");
+                                                    setUsePassword(false);
+                                                }}
+                                            >
+                                                <Caption
+                                                    theme={theme.theme}
+                                                    className="underline"
+                                                >
+                                                    {
+                                                        LOGIN_PASSWORD_BACK_TO_CODE
+                                                    }
+                                                </Caption>
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                                 {showCode && (
