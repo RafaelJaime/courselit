@@ -2,12 +2,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import type { Instructor } from "@courselit/common-models";
 import InstructorsBlock from "../instructors-block";
-import InstructorStack from "../instructor-stack";
-import LessonInstructors from "../lesson-instructors";
-import {
-    INSTRUCTORS_VIEWER_HEADING,
-    LESSON_INSTRUCTOR_PREFIX,
-} from "@ui-config/strings";
+import { INSTRUCTORS_VIEWER_HEADING } from "@ui-config/strings";
 
 jest.mock("@courselit/page-primitives", () => ({
     Header2: ({ children }: any) => <h2>{children}</h2>,
@@ -74,68 +69,5 @@ describe("InstructorsBlock", () => {
         );
 
         expect(screen.getByText("AA")).toBeInTheDocument();
-    });
-});
-
-describe("InstructorStack", () => {
-    const people = [
-        person("a", "Ann Ada"),
-        person("b", "Bob Hopper"),
-        person("c", "Cy Turing"),
-        person("d", "Dee Knuth"),
-    ];
-
-    it("renders nothing without instructors", () => {
-        const { container } = render(<InstructorStack instructors={[]} />);
-
-        expect(container).toBeEmptyDOMElement();
-    });
-
-    it("shows up to two avatars and a +n counter for the rest", () => {
-        render(<InstructorStack instructors={people} />);
-
-        expect(screen.getByText("AA")).toBeInTheDocument();
-        expect(screen.getByText("BH")).toBeInTheDocument();
-        expect(screen.queryByText("CT")).toBeNull();
-        expect(screen.getByText("+2")).toBeInTheDocument();
-    });
-
-    it("has no counter when everyone fits", () => {
-        render(<InstructorStack instructors={people.slice(0, 2)} />);
-
-        expect(screen.queryByText(/^\+/)).toBeNull();
-    });
-
-    it("names the instructors for assistive tech", () => {
-        render(<InstructorStack instructors={people.slice(0, 3)} />);
-
-        expect(
-            screen.getByLabelText(
-                `${INSTRUCTORS_VIEWER_HEADING}: Ann Ada, Bob Hopper, Cy Turing`,
-            ),
-        ).toBeInTheDocument();
-    });
-});
-
-describe("LessonInstructors", () => {
-    it("renders nothing without instructors", () => {
-        const { container } = render(<LessonInstructors instructors={[]} />);
-
-        expect(container).toBeEmptyDOMElement();
-    });
-
-    it("says who teaches the lesson", () => {
-        render(
-            <LessonInstructors
-                instructors={[
-                    person("a", "Ann Ada"),
-                    person("b", "Bob Hopper"),
-                ]}
-            />,
-        );
-
-        expect(
-            screen.getByText(`${LESSON_INSTRUCTOR_PREFIX} Ann Ada, Bob Hopper`),
-        ).toBeInTheDocument();
     });
 });

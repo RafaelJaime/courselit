@@ -1271,33 +1271,7 @@ describe("Section instructors in the sidebar", () => {
         mockIsEnrolled = true;
     });
 
-    it("carries the section's own instructors on its sidebar item", () => {
-        const course = {
-            ...baseCourse,
-            groups: [
-                {
-                    id: "g1",
-                    name: "With teachers",
-                    lessons: [],
-                    instructors: [
-                        { instructorId: "ann", name: "Ann Ada", links: [] },
-                    ],
-                },
-                { id: "g2", name: "Without", lessons: [], instructors: [] },
-            ],
-        } as unknown as CourseFrontend;
-
-        const items = generateSideBarItems(
-            course,
-            profile,
-            "/course/test-course/course-1",
-        );
-
-        expect(items[1].instructors?.map((i) => i.name)).toEqual(["Ann Ada"]);
-        expect(items[2].instructors ?? []).toEqual([]);
-    });
-
-    it("shows a small avatar stack next to the title of sections that have their own instructors", () => {
+    it("shows no instructor avatars next to section titles", () => {
         const course = {
             ...baseCourse,
             groups: [
@@ -1315,19 +1289,6 @@ describe("Section instructors in the sidebar", () => {
                     instructors: [
                         { instructorId: "ann", name: "Ann Ada", links: [] },
                         { instructorId: "bob", name: "Bob Hopper", links: [] },
-                        { instructorId: "cy", name: "Cy Turing", links: [] },
-                    ],
-                },
-                {
-                    id: "g2",
-                    name: "Without",
-                    lessons: [
-                        {
-                            lessonId: "lesson-2",
-                            title: "Lesson two",
-                            type: "text",
-                            requiresEnrollment: false,
-                        },
                     ],
                 },
             ],
@@ -1341,20 +1302,16 @@ describe("Section instructors in the sidebar", () => {
             </ProfileContext.Provider>,
         );
 
+        expect(document.body.textContent).toContain("With teachers");
         expect(
-            screen.getByLabelText(
-                `${INSTRUCTORS_VIEWER_HEADING}: Ann Ada, Bob Hopper, Cy Turing`,
-            ),
-        ).toBeInTheDocument();
-        expect(screen.getByText("+1")).toBeInTheDocument();
-        expect(
-            screen.getAllByLabelText(`${INSTRUCTORS_VIEWER_HEADING}:`, {
+            screen.queryAllByLabelText(`${INSTRUCTORS_VIEWER_HEADING}:`, {
                 exact: false,
             }),
-        ).toHaveLength(1);
+        ).toHaveLength(0);
+        expect(screen.queryByText("Ann Ada")).toBeNull();
     });
 
-    it("keeps the whole section title instead of cutting it to make room for the avatars", () => {
+    it("cuts long section titles as usual, whatever the section's instructors", () => {
         const longTitle = "Inteligencia artificial aplicada al coaching";
         const course = {
             ...baseCourse,
@@ -1385,10 +1342,9 @@ describe("Section instructors in the sidebar", () => {
             </ProfileContext.Provider>,
         );
 
-        expect(document.body.textContent).not.toContain(
-            `${longTitle.slice(0, 19)}...`,
+        expect(document.body.textContent).toContain(
+            `${longTitle.slice(0, 26)}...`,
         );
-        expect(document.body.textContent).toContain(longTitle);
     });
 });
 

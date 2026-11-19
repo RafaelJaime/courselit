@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { LessonViewer } from "../index";
-import { LESSON_INSTRUCTOR_PREFIX } from "@ui-config/strings";
+import { INSTRUCTORS_VIEWER_HEADING } from "@ui-config/strings";
 
 const mockExec = jest.fn();
 
@@ -30,6 +30,9 @@ jest.mock("@courselit/page-blocks", () => ({ TextRenderer: () => null }));
 jest.mock("@courselit/page-primitives", () => ({
     Button: ({ children }: any) => <button>{children}</button>,
     Header1: ({ children }: any) => <h1>{children}</h1>,
+    Header2: ({ children }: any) => <h2>{children}</h2>,
+    Header3: ({ children }: any) => <h3>{children}</h3>,
+    Text2: ({ children }: any) => <p>{children}</p>,
     Text1: ({ children }: any) => <p>{children}</p>,
 }));
 jest.mock("@courselit/icons", () => ({
@@ -53,8 +56,18 @@ jest.mock("@components/contexts", () => {
     return { ThemeContext: React.createContext({ theme: {} }) };
 });
 
-const ann = { instructorId: "ann", name: "Ann Ada", links: [] };
-const bob = { instructorId: "bob", name: "Bob Hopper", links: [] };
+const ann = {
+    instructorId: "ann",
+    name: "Ann Ada",
+    bio: "Ann teaches things",
+    links: [],
+};
+const bob = {
+    instructorId: "bob",
+    name: "Bob Hopper",
+    bio: "Bob builds things",
+    links: [],
+};
 
 const lesson = {
     lessonId: "lesson-1",
@@ -86,7 +99,7 @@ const respondWith = (course: Record<string, unknown>) =>
 describe("LessonViewer instructors", () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it("credits the section's instructors under the title", async () => {
+    it("shows the section's instructors block after the lesson, not a credit under the title", async () => {
         respondWith({
             instructors: [ann],
             groups: [{ id: "g1", instructors: [bob] }],
@@ -95,9 +108,23 @@ describe("LessonViewer instructors", () => {
         renderViewer();
 
         expect(
-            await screen.findByText(`${LESSON_INSTRUCTOR_PREFIX} Bob Hopper`),
+            await screen.findByRole("heading", {
+                name: INSTRUCTORS_VIEWER_HEADING,
+            }),
         ).toBeInTheDocument();
+        expect(screen.getByText("Bob Hopper")).toBeInTheDocument();
+        expect(screen.getByText("Bob builds things")).toBeInTheDocument();
         expect(screen.queryByText(/Ann Ada/)).toBeNull();
+        expect(screen.queryByText(/^Con /)).toBeNull();
+
+        const title = screen.getByRole("heading", { name: "My lesson" });
+        const block = screen.getByRole("heading", {
+            name: INSTRUCTORS_VIEWER_HEADING,
+        });
+        expect(
+            title.compareDocumentPosition(block) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
     });
 
     it("falls back to the course's instructors", async () => {
@@ -108,9 +135,8 @@ describe("LessonViewer instructors", () => {
         });
         renderViewer();
 
-        expect(
-            await screen.findByText(`${LESSON_INSTRUCTOR_PREFIX} Ann Ada`),
-        ).toBeInTheDocument();
+        expect(await screen.findByText("Ann Ada")).toBeInTheDocument();
+        expect(screen.getByText("Ann teaches things")).toBeInTheDocument();
     });
 
     it("shows nothing when no instructor is assigned", async () => {
@@ -123,7 +149,7 @@ describe("LessonViewer instructors", () => {
 
         await screen.findByRole("heading", { name: "My lesson" });
         expect(
-            screen.queryByText(new RegExp(`^${LESSON_INSTRUCTOR_PREFIX} `)),
+            screen.queryByRole("heading", { name: INSTRUCTORS_VIEWER_HEADING }),
         ).toBeNull();
     });
 });

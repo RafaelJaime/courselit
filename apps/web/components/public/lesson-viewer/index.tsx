@@ -46,7 +46,7 @@ import { getUserProfile } from "@/app/(with-contexts)/helpers";
 import WidgetErrorBoundary from "../base-layout/template/widget-error-boundary";
 import { Button, Header1, Text1 } from "@courselit/page-primitives";
 import { ThemeContext } from "@components/contexts";
-import LessonInstructors from "@components/instructors/lesson-instructors";
+import InstructorsBlock from "@components/instructors/instructors-block";
 import { getLessonInstructors } from "@components/instructors/helpers";
 import NextLink from "next/link";
 import { BookOpen, Check } from "lucide-react";
@@ -337,9 +337,6 @@ export const LessonViewer = ({
                             <Header1 theme={theme.theme}>
                                 {lesson.title}
                             </Header1>
-                            <LessonInstructors
-                                instructors={lessonInstructors}
-                            />
                         </header>
                         {String.prototype.toUpperCase.call(
                             LESSON_TYPE_VIDEO,
@@ -482,6 +479,10 @@ export const LessonViewer = ({
                             )}
                         <LessonComplementCards
                             complements={lesson.complements}
+                            theme={theme.theme}
+                        />
+                        <InstructorsBlock
+                            instructors={lessonInstructors}
                             theme={theme.theme}
                         />
                         {isViewerEnrolled && !isPreview && (

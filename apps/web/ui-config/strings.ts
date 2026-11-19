@@ -990,7 +990,6 @@ export const INSTRUCTORS_PICKER_MANAGE_LINK = "Create instructors";
 export const INSTRUCTORS_PICKER_NONE_SELECTED = "No instructors assigned";
 export const INSTRUCTORS_SAVED_MESSAGE = "Instructors updated";
 export const INSTRUCTORS_VIEWER_HEADING = "Profesores";
-export const LESSON_INSTRUCTOR_PREFIX = "Con";
 export const SEE_PLANS_BUTTON_TEXT = "Ver planes";
 export const SEE_PLANS_HREF = "/#planes";
 

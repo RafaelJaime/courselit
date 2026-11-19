@@ -14,7 +14,7 @@ import {
     SIDEBAR_TEXT_COURSE_ABOUT,
     SIDEBAR_TEXT_COURSE_DISCUSSIONS,
 } from "@ui-config/strings";
-import { Profile, Constants, Instructor } from "@courselit/common-models";
+import { Profile, Constants } from "@courselit/common-models";
 import {
     ProfileContext,
     SiteInfoContext,
@@ -64,7 +64,6 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Caption } from "@courselit/page-primitives";
 import NextThemeSwitcher from "@components/admin/next-theme-switcher";
-import InstructorStack from "@components/instructors/instructor-stack";
 import {
     appendCourseViewerSessionParamsToHref,
     getCourseViewerSessionParams,
@@ -343,11 +342,7 @@ export function AppSidebar({
                             <SidebarGroup>
                                 <SidebarGroupLabel
                                     asChild
-                                    className={`group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm ${
-                                        item.instructors?.length
-                                            ? "h-auto min-h-8 py-1"
-                                            : ""
-                                    }`}
+                                    className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"
                                 >
                                     <CollapsibleTrigger
                                         asChild
@@ -361,36 +356,18 @@ export function AppSidebar({
                                                     <span className="flex min-w-0 items-center gap-2">
                                                         <Folder className="h-4 w-4 shrink-0 text-foreground" />
                                                         <Tooltip>
-                                                            <TooltipTrigger
-                                                                className={`min-w-0 text-foreground ${
-                                                                    item
-                                                                        .instructors
-                                                                        ?.length
-                                                                        ? "break-words text-left"
-                                                                        : "truncate"
-                                                                }`}
-                                                            >
-                                                                {item
-                                                                    .instructors
-                                                                    ?.length
-                                                                    ? item.title
-                                                                    : truncate(
-                                                                          item.title,
-                                                                          item.badge
-                                                                              ? 15
-                                                                              : 26,
-                                                                      )}
+                                                            <TooltipTrigger className="min-w-0 truncate text-foreground">
+                                                                {truncate(
+                                                                    item.title,
+                                                                    item.badge
+                                                                        ? 15
+                                                                        : 26,
+                                                                )}
                                                             </TooltipTrigger>
                                                             <TooltipContent>
                                                                 {item.title}
                                                             </TooltipContent>
                                                         </Tooltip>
-                                                        <InstructorStack
-                                                            instructors={
-                                                                item.instructors ??
-                                                                []
-                                                            }
-                                                        />
                                                     </span>
                                                 </TooltipProvider>
                                                 {item.progress && (
@@ -492,7 +469,6 @@ interface SidebarItem {
     title: string;
     href: string;
     icon?: ReactNode;
-    instructors?: Instructor[];
     badge?: {
         text: string;
         description: string;
@@ -552,7 +528,6 @@ export function generateSideBarItems(
             title: group.name,
             href: "#",
             isActive: false,
-            instructors: group.instructors,
             badge: getDripLabel({
                 course,
                 group,
