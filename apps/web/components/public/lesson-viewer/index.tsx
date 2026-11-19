@@ -27,6 +27,7 @@ import {
     Constants,
     TextEditorContent,
     type Address,
+    type Instructor,
     type Lesson,
     type Profile,
     type Quiz,
@@ -45,6 +46,8 @@ import { getUserProfile } from "@/app/(with-contexts)/helpers";
 import WidgetErrorBoundary from "../base-layout/template/widget-error-boundary";
 import { Button, Header1, Text1 } from "@courselit/page-primitives";
 import { ThemeContext } from "@components/contexts";
+import LessonInstructors from "@components/instructors/lesson-instructors";
+import { getLessonInstructors } from "@components/instructors/helpers";
 import NextLink from "next/link";
 import { BookOpen, Check } from "lucide-react";
 import {
@@ -91,6 +94,9 @@ export const LessonViewer = ({
     const [lesson, setLesson] = useState<Lesson>();
     const [courseTitle, setCourseTitle] = useState<string>("");
     const [isPreview, setIsPreview] = useState(false);
+    const [lessonInstructors, setLessonInstructors] = useState<Instructor[]>(
+        [],
+    );
     const [error, setError] = useState();
     const searchParams = useSearchParams();
     const viewerSessionParams = getCourseViewerSessionParams(searchParams);
@@ -144,6 +150,21 @@ export const LessonViewer = ({
                 course: getCourse(id: $productId, preview: $preview) {
                     title
                     isPreview
+                    instructors {
+                        instructorId,
+                        name
+                    }
+                    groups {
+                        id,
+                        instructors {
+                            instructorId,
+                            name
+                        }
+                    }
+                    lessons {
+                        lessonId,
+                        groupId
+                    }
                 }
                 lesson: getLessonDetails(id: $lessonId, courseId: $productId, preview: $preview) {
                     lessonId,
@@ -195,6 +216,15 @@ export const LessonViewer = ({
             if (response.course) {
                 setCourseTitle(response.course.title || "");
                 setIsPreview(Boolean(response.course.isPreview));
+                setLessonInstructors(
+                    getLessonInstructors(
+                        response.course,
+                        response.course.lessons?.find(
+                            (item: { lessonId: string }) =>
+                                item.lessonId === id,
+                        )?.groupId,
+                    ),
+                );
             }
             if (response.lesson) {
                 setLesson(response.lesson);
@@ -307,6 +337,9 @@ export const LessonViewer = ({
                             <Header1 theme={theme.theme}>
                                 {lesson.title}
                             </Header1>
+                            <LessonInstructors
+                                instructors={lessonInstructors}
+                            />
                         </header>
                         {String.prototype.toUpperCase.call(
                             LESSON_TYPE_VIDEO,
