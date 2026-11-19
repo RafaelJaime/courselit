@@ -230,7 +230,7 @@ export default function InstructorForm({
                     )}
                 />
                 <div className="space-y-3">
-                    <Label>{INSTRUCTOR_LINKS_LABEL}</Label>
+                    <Label className="block">{INSTRUCTOR_LINKS_LABEL}</Label>
                     {fields.map((item, index) => (
                         <div key={item.id} className="flex items-start gap-2">
                             <FormField

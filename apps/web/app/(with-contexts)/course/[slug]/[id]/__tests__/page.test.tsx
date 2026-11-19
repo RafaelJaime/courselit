@@ -8,7 +8,11 @@ import {
     ThemeContext,
 } from "@components/contexts";
 import { getProduct } from "../helpers";
-import { INSTRUCTORS_VIEWER_HEADING } from "@ui-config/strings";
+import {
+    INSTRUCTORS_VIEWER_HEADING,
+    SEE_PLANS_BUTTON_TEXT,
+    SEE_PLANS_HREF,
+} from "@ui-config/strings";
 import { getUserProfile } from "@/app/(with-contexts)/helpers";
 
 jest.mock("@components/contexts", () => {
@@ -159,6 +163,7 @@ describe("Course introduction page", () => {
             costType: "free",
             isPreview: false,
             firstLesson: "lesson-1",
+            paymentPlans: [{ planId: "plan-1" }],
         });
         (getUserProfile as jest.Mock).mockResolvedValue(undefined);
     });
@@ -178,6 +183,29 @@ describe("Course introduction page", () => {
             "href",
             "/checkout?type=course&id=course-1",
         );
+    });
+
+    it("replaces price and checkout CTA with a link to the plans when the course has no active payment plan", async () => {
+        (getProduct as jest.Mock).mockResolvedValue({
+            title: "Course intro",
+            description: JSON.stringify({ type: "doc", content: [] }),
+            courseId: "course-1",
+            slug: "course-slug",
+            cost: 0,
+            costType: "free",
+            isPreview: false,
+            firstLesson: "lesson-1",
+            paymentPlans: [],
+        });
+        renderPage();
+
+        expect(
+            await screen.findByRole("link", { name: SEE_PLANS_BUTTON_TEXT }),
+        ).toHaveAttribute("href", SEE_PLANS_HREF);
+        expect(document.body).not.toHaveTextContent("$0");
+        expect(
+            screen.queryByRole("link", { name: "Buy now" }),
+        ).not.toBeInTheDocument();
     });
 
     it("does not show price and checkout CTA for enrolled viewers", async () => {

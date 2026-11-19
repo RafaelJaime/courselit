@@ -6,6 +6,8 @@ import { ArrowRight } from "@courselit/icons";
 import {
     COURSE_PROGRESS_START,
     ENROLL_BUTTON_TEXT,
+    SEE_PLANS_BUTTON_TEXT,
+    SEE_PLANS_HREF,
     BTN_VIEW_CERTIFICATE,
 } from "@ui-config/strings";
 import {
@@ -87,6 +89,7 @@ export default function ProductPage(props: {
         viewerProfile && isEnrolled(product.courseId, viewerProfile),
     );
     const isPreview = Boolean(product.isPreview);
+    const hasActivePlan = Boolean(product.paymentPlans?.length);
 
     return (
         <div className="flex flex-col pb-[100px] lg:max-w-[40rem] xl:max-w-[48rem] mx-auto">
@@ -104,7 +107,7 @@ export default function ProductPage(props: {
                     </Button>
                 </Link>
             )}
-            {!enrolled && !isPreview && (
+            {!enrolled && !isPreview && hasActivePlan && (
                 <div>
                     <div className="flex justify-between items-center">
                         <div className="font-medium flex items-center">
@@ -126,6 +129,15 @@ export default function ProductPage(props: {
                     </div>
                 </div>
             )}
+            {!enrolled && !isPreview && !hasActivePlan && (
+                <div className="flex justify-end">
+                    <Link href={SEE_PLANS_HREF}>
+                        <Button theme={theme.theme}>
+                            {SEE_PLANS_BUTTON_TEXT}
+                        </Button>
+                    </Link>
+                </div>
+            )}
             {product.featuredImage && (
                 <div className="flex justify-center">
                     <div className="mt-4 mb-8 w-full md:max-w-screen-md">
@@ -138,7 +150,7 @@ export default function ProductPage(props: {
                     </div>
                 </div>
             )}
-            <div className="overflow-hidden min-h-[360px]">
+            <div className="overflow-hidden">
                 <div className="flex flex-col gap-4 text-foreground">
                     <TableOfContent
                         json={descriptionJson}

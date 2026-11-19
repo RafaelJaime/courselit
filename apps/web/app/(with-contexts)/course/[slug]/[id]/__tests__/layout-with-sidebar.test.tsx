@@ -1353,6 +1353,43 @@ describe("Section instructors in the sidebar", () => {
             }),
         ).toHaveLength(1);
     });
+
+    it("keeps the whole section title instead of cutting it to make room for the avatars", () => {
+        const longTitle = "Inteligencia artificial aplicada al coaching";
+        const course = {
+            ...baseCourse,
+            groups: [
+                {
+                    id: "g1",
+                    name: longTitle,
+                    lessons: [
+                        {
+                            lessonId: "lesson-1",
+                            title: "Lesson one",
+                            type: "text",
+                            requiresEnrollment: false,
+                        },
+                    ],
+                    instructors: [
+                        { instructorId: "ann", name: "Ann Ada", links: [] },
+                    ],
+                },
+            ],
+        } as unknown as CourseFrontend;
+
+        render(
+            <ProfileContext.Provider value={{ profile } as any}>
+                <ProductPage product={course}>
+                    <div>Course body</div>
+                </ProductPage>
+            </ProfileContext.Provider>,
+        );
+
+        expect(document.body.textContent).not.toContain(
+            `${longTitle.slice(0, 19)}...`,
+        );
+        expect(document.body.textContent).toContain(longTitle);
+    });
 });
 
 describe("Course viewer layout", () => {
