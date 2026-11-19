@@ -17,7 +17,7 @@ function TestimonialCard({ item }: { item: CheckoutTestimonial }) {
     const [playing, setPlaying] = useState(false);
 
     return (
-        <figure className="relative m-0 aspect-[9/16] w-[72%] shrink-0 snap-start overflow-hidden rounded-3xl border bg-black sm:w-[calc((100%-16px)/2)]">
+        <figure className="relative m-0 aspect-[9/16] w-[44%] min-w-[150px] max-w-[190px] shrink-0 snap-start overflow-hidden rounded-3xl border bg-black">
             {playing ? (
                 <video
                     src={item.video}
@@ -60,7 +60,7 @@ function TestimonialCard({ item }: { item: CheckoutTestimonial }) {
                     </span>
                 </button>
             )}
-            <figcaption className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent px-4 pb-8 pt-3 text-sm font-semibold text-white">
+            <figcaption className="pointer-events-none absolute inset-x-0 top-0 truncate bg-gradient-to-b from-black/80 to-transparent px-3 pb-6 pt-3 text-xs font-semibold text-white">
                 {item.handle}
             </figcaption>
         </figure>
@@ -74,7 +74,7 @@ export function CheckoutSocialProof() {
                 <h2 className="text-xl font-semibold">
                     {CHECKOUT_TESTIMONIALS_HEADING}
                 </h2>
-                <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-1">
+                <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:snap-none lg:overflow-visible">
                     {CHECKOUT_TESTIMONIALS.map((item) => (
                         <TestimonialCard key={item.handle} item={item} />
                     ))}

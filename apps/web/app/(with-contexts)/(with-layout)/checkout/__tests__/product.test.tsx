@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 const payloads: any[] = [];
@@ -84,5 +84,25 @@ describe("ProductCheckout", () => {
         await waitFor(() => {
             expect(notFound).toHaveBeenCalled();
         });
+    });
+
+    it("titles the page in Spanish", async () => {
+        mockExec.mockResolvedValueOnce({
+            course: {
+                courseId: "course-1",
+                title: "Curso",
+                slug: "curso",
+                paymentPlans: [],
+                defaultPaymentPlan: "",
+            },
+            loginProviders: [],
+        });
+
+        render(<ProductCheckout />);
+
+        expect(
+            await screen.findByRole("heading", { name: "Finalizar compra" }),
+        ).toBeTruthy();
+        expect(screen.queryByText("Checkout")).toBeNull();
     });
 });

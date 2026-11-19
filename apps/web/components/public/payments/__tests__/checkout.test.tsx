@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { Constants } from "@courselit/common-models";
 import {
     CHECKOUT_PLAN_HEADING,
@@ -81,6 +81,7 @@ jest.mock("@/components/ui/radio-group", () => ({
 }));
 
 import Checkout, { Product } from "../checkout";
+import { ProfileContext } from "@components/contexts";
 
 const plans = [
     {
@@ -149,5 +150,56 @@ describe("Checkout", () => {
                 name: CHECKOUT_TESTIMONIALS_HEADING,
             }),
         ).toBeNull();
+    });
+
+    it("keeps the pay button disabled, full width, with a hint while logged out", () => {
+        renderCheckout(Constants.MembershipEntityType.COMMUNITY);
+
+        const button = screen.getByRole("button", {
+            name: "Completar compra",
+        });
+        expect((button as HTMLButtonElement).disabled).toBe(true);
+        expect(button.className).toContain("w-full");
+        expect(button.className).not.toContain("md:w-auto");
+        expect(
+            screen.getByText("Introduce tu email para continuar"),
+        ).toBeTruthy();
+    });
+
+    it("drops the hint and enables the pay button once logged in", async () => {
+        const product: Product = {
+            id: "p1",
+            name: "Membresia",
+            type: Constants.MembershipEntityType.COMMUNITY,
+            defaultPaymentPlanId: "plan-1",
+        };
+        render(
+            <ProfileContext.Provider
+                value={
+                    {
+                        profile: { email: "a@b.es", name: "Ana", userId: "u1" },
+                        setProfile: jest.fn(),
+                    } as any
+                }
+            >
+                <Checkout
+                    product={product}
+                    paymentPlans={plans}
+                    includedProducts={[]}
+                    type={product.type}
+                    id="p1"
+                />
+            </ProfileContext.Provider>,
+        );
+
+        expect(
+            screen.queryByText("Introduce tu email para continuar"),
+        ).toBeNull();
+        const button = await screen.findByRole("button", {
+            name: "Completar compra",
+        });
+        await waitFor(() =>
+            expect((button as HTMLButtonElement).disabled).toBe(false),
+        );
     });
 });

@@ -1003,3 +1003,37 @@ export const CHECKOUT_TESTIMONIALS_HEADING =
     "Lo que dicen quienes ya están dentro";
 export const CHECKOUT_CLIENTS_HEADING = "Con quién hemos trabajado";
 export const CHECKOUT_PLAY_TESTIMONIAL_PREFIX = "Reproducir testimonio de";
+export const CHECKOUT_HEADING = "Finalizar compra";
+export const CHECKOUT_SUBMIT_HINT = "Introduce tu email para continuar";
+export const CHECKOUT_ORDER_SUMMARY_HEADING = "Resumen del pedido";
+export const CHECKOUT_SHOW_ORDER_SUMMARY = "Mostrar resumen del pedido";
+export const CHECKOUT_HIDE_ORDER_SUMMARY = "Ocultar resumen del pedido";
+export const CHECKOUT_TOGGLE_ORDER_SUMMARY = "Alternar resumen del pedido";
+export const CHECKOUT_TOTAL_LABEL = "Total";
+export const CHECKOUT_RECOMMENDED_BADGE = "Recomendado";
+export const CHECKOUT_ONE_TIME_LABEL = "pago único";
+export const CHECKOUT_PRODUCTS_INCLUDED = "productos incluidos";
+export const CHECKOUT_PERIOD_MONTH = "/mes";
+export const CHECKOUT_PERIOD_YEAR = "/año";
+export const CHECKOUT_PLAN_FREE = "Plan gratuito";
+export const CHECKOUT_PLAN_ONE_TIME_PREFIX = "Pago único de";
+export const CHECKOUT_PLAN_BILLED_ANNUALLY_PREFIX = "Facturado anualmente:";
+export const CHECKOUT_PER_MONTH_SUFFIX = "al mes";
+export const CHECKOUT_FOR_MONTHS_PREFIX = "durante";
+export const CHECKOUT_MONTHS_WORD = "meses";
+export const CHECKOUT_TERMS_DISCLAIMER = "Al continuar, aceptas los ";
+export const CHECKOUT_TERMS_LINK = "Términos";
+export const CHECKOUT_SELECT_PLAN_ERROR = "Elige un plan";
+export const CHECKOUT_ALREADY_OWNED_HEADING = "Ya tienes acceso";
+export const CHECKOUT_ALREADY_OWNED_TEXT = "Ya tienes acceso a este contenido.";
+export const CHECKOUT_ACCESS_DENIED_HEADING = "Acceso denegado";
+export const CHECKOUT_ACCESS_DENIED_TEXT =
+    "Tu solicitud fue rechazada y no puedes continuar con la compra.";
+export const CHECKOUT_GO_TO_RESOURCE = "Ir al contenido";
+export const CHECKOUT_JOINING_REASON_LABEL = "Motivo para unirte";
+export const CHECKOUT_JOINING_REASON_PLACEHOLDER =
+    "Cuéntanos por qué quieres unirte";
+export const CHECKOUT_RECAPTCHA_UNAVAILABLE =
+    "El servicio reCAPTCHA no está disponible. Inténtalo de nuevo más tarde.";
+export const CHECKOUT_RECAPTCHA_FAILED =
+    "No se pudo validar reCAPTCHA. Inténtalo de nuevo.";

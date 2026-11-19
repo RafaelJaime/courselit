@@ -6,7 +6,7 @@ import { Constants, PaymentPlan, Course } from "@courselit/common-models";
 import type { MembershipEntityType } from "@courselit/common-models";
 import { useToast } from "@courselit/components-library";
 import { FetchBuilder } from "@courselit/utils";
-import { TOAST_TITLE_ERROR } from "@ui-config/strings";
+import { CHECKOUT_HEADING, TOAST_TITLE_ERROR } from "@ui-config/strings";
 import { notFound, useSearchParams } from "next/navigation";
 import { useCallback, useContext, useEffect, useState } from "react";
 import type { RuntimeLoginProvider } from "@/lib/login-providers";
@@ -232,7 +232,7 @@ export default function ProductCheckout() {
     return (
         <>
             <Header1 theme={theme.theme} className="mb-8">
-                Checkout
+                {CHECKOUT_HEADING}
             </Header1>
             <Checkout
                 product={product}

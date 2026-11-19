@@ -38,7 +38,17 @@ import { PaymentPlanCard } from "./payment-plan-card";
 import { MobileOrderSummary, DesktopOrderSummary } from "./order-summary";
 import type { RuntimeLoginProvider } from "@/lib/login-providers";
 import {
+    CHECKOUT_ACCESS_DENIED_HEADING,
+    CHECKOUT_ACCESS_DENIED_TEXT,
+    CHECKOUT_ALREADY_OWNED_HEADING,
+    CHECKOUT_ALREADY_OWNED_TEXT,
     CHECKOUT_EMAIL_LABEL,
+    CHECKOUT_GO_TO_RESOURCE,
+    CHECKOUT_JOINING_REASON_LABEL,
+    CHECKOUT_JOINING_REASON_PLACEHOLDER,
+    CHECKOUT_SELECT_PLAN_ERROR,
+    CHECKOUT_SUBMIT_HINT,
+    TOAST_TITLE_ERROR,
     CHECKOUT_NAME_LABEL,
     CHECKOUT_PERSONAL_INFORMATION_LABEL,
     CHECKOUT_PLAN_HEADING,
@@ -70,7 +80,7 @@ export interface CheckoutScreenProps {
 }
 
 const formSchema = z.object({
-    selectedPlan: z.string().min(1, "Please select a plan"),
+    selectedPlan: z.string().min(1, CHECKOUT_SELECT_PLAN_ERROR),
     joiningReason: z.string().optional(),
 });
 
@@ -139,7 +149,7 @@ export default function Checkout({
                 }
             } catch (err) {
                 toast({
-                    title: "Error",
+                    title: TOAST_TITLE_ERROR,
                     description: err.message,
                     variant: "destructive",
                 });
@@ -255,7 +265,7 @@ export default function Checkout({
             }
         } catch (err) {
             toast({
-                title: "Error",
+                title: TOAST_TITLE_ERROR,
                 description: err.message,
                 variant: "destructive",
             });
@@ -290,7 +300,7 @@ export default function Checkout({
             router.replace(`/checkout/verify?id=${verifyResponse.purchaseId}`);
         } catch (err: any) {
             toast({
-                title: "Error",
+                title: TOAST_TITLE_ERROR,
                 description: err.message,
                 variant: "destructive",
             });
@@ -365,14 +375,14 @@ export default function Checkout({
                                     )}
                                     {membershipStatus ===
                                     Constants.MembershipStatus.ACTIVE
-                                        ? "Already owned"
-                                        : "Access Denied"}
+                                        ? CHECKOUT_ALREADY_OWNED_HEADING
+                                        : CHECKOUT_ACCESS_DENIED_HEADING}
                                 </Header3>
                                 <Text1 theme={theme.theme}>
                                     {membershipStatus ===
                                     Constants.MembershipStatus.ACTIVE
-                                        ? "You already have access to this resource."
-                                        : "You have been rejected and cannot proceed with the checkout."}
+                                        ? CHECKOUT_ALREADY_OWNED_TEXT
+                                        : CHECKOUT_ACCESS_DENIED_TEXT}
                                 </Text1>
                                 {membershipStatus ===
                                     Constants.MembershipStatus.ACTIVE && (
@@ -398,7 +408,7 @@ export default function Checkout({
                                         }}
                                         theme={theme.theme}
                                     >
-                                        Go to the resource
+                                        {CHECKOUT_GO_TO_RESOURCE}
                                     </Button>
                                 )}
                             </div>
@@ -491,13 +501,15 @@ export default function Checkout({
                                                         <FormItem className="mb-6">
                                                             <FormLabel className="text-sm font-semibold mb-4">
                                                                 {product.joiningReasonText ||
-                                                                    "Reason for joining"}
+                                                                    CHECKOUT_JOINING_REASON_LABEL}
                                                             </FormLabel>
                                                             <FormControl>
                                                                 <textarea
                                                                     className="w-full border rounded p-2"
                                                                     {...field}
-                                                                    placeholder="Please provide your reason for joining"
+                                                                    placeholder={
+                                                                        CHECKOUT_JOINING_REASON_PLACEHOLDER
+                                                                    }
                                                                 />
                                                             </FormControl>
                                                             <FormMessage />
@@ -540,7 +552,12 @@ export default function Checkout({
                                 <Button
                                     type="submit"
                                     form="checkout-form"
-                                    className="w-full rounded-full md:w-auto"
+                                    className="w-full rounded-full"
+                                    aria-describedby={
+                                        isLoggedIn
+                                            ? undefined
+                                            : "checkout-submit-hint"
+                                    }
                                     disabled={
                                         isSubmitting ||
                                         !isLoggedIn ||
@@ -558,6 +575,14 @@ export default function Checkout({
                                         ? CHECKOUT_SUBMITTING
                                         : CHECKOUT_SUBMIT_BUTTON}
                                 </Button>
+                                {!isLoggedIn && (
+                                    <p
+                                        id="checkout-submit-hint"
+                                        className="-mt-4 text-center text-sm text-muted-foreground"
+                                    >
+                                        {CHECKOUT_SUBMIT_HINT}
+                                    </p>
+                                )}
                             </>
                         )}
                         {product.type ===

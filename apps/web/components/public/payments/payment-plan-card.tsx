@@ -14,6 +14,12 @@ import { Text1 } from "@courselit/page-primitives";
 import { Star, Package } from "lucide-react";
 import { PaymentPlan, Course, Constants } from "@courselit/common-models";
 import { getPlanPrice } from "@ui-lib/utils";
+import {
+    CHECKOUT_ONE_TIME_LABEL,
+    CHECKOUT_PRODUCTS_INCLUDED,
+    CHECKOUT_RECOMMENDED_BADGE,
+} from "@ui-config/strings";
+import { checkoutPeriod } from "./checkout-format";
 
 const { PaymentPlanType: paymentPlanType } = Constants;
 
@@ -84,7 +90,7 @@ export function PaymentPlanCard({
                                             className="flex items-center gap-1"
                                         >
                                             <Star className="w-3 h-3" />
-                                            Recommended
+                                            {CHECKOUT_RECOMMENDED_BADGE}
                                         </Badge>
                                     )}
                                     {/* {isRecommended && (
@@ -120,7 +126,7 @@ export function PaymentPlanCard({
                                             theme={theme.theme}
                                             className="text-muted-foreground text-sm"
                                         >
-                                            {planPrice.period}
+                                            {checkoutPeriod(planPrice.period)}
                                         </Text2>
                                     )}
                                 </div>
@@ -129,7 +135,7 @@ export function PaymentPlanCard({
                                         theme={theme.theme}
                                         className="text-muted-foreground text-sm"
                                     >
-                                        one-time
+                                        {CHECKOUT_ONE_TIME_LABEL}
                                     </Text2>
                                 )}
                             </div>
@@ -140,7 +146,7 @@ export function PaymentPlanCard({
                                         <Package className="w-4 h-4 text-muted-foreground" />
                                         <Text2 theme={theme.theme}>
                                             {planIncludedProducts.length}{" "}
-                                            products included
+                                            {CHECKOUT_PRODUCTS_INCLUDED}
                                         </Text2>
                                     </div>
                                 )}

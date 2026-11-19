@@ -231,4 +231,12 @@ describe("Checkout LoginForm", () => {
             });
         });
     });
+
+    it("shows the terms disclaimer in Spanish", () => {
+        renderLoginForm();
+
+        expect(screen.getByText(/Al continuar, aceptas los/)).toBeTruthy();
+        expect(screen.getByRole("link", { name: "Términos" })).toBeTruthy();
+        expect(screen.queryByText(/By submitting/)).toBeNull();
+    });
 });

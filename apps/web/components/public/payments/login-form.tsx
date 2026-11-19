@@ -27,7 +27,10 @@ import {
     CHECKOUT_EMAIL_INVALID,
     CHECKOUT_EMAIL_PLACEHOLDER,
     CHECKOUT_VERIFY_CODE_BUTTON,
-    LOGIN_FORM_DISCLAIMER,
+    CHECKOUT_RECAPTCHA_FAILED,
+    CHECKOUT_RECAPTCHA_UNAVAILABLE,
+    CHECKOUT_TERMS_DISCLAIMER,
+    CHECKOUT_TERMS_LINK,
     TOAST_TITLE_ERROR,
 } from "@ui-config/strings";
 import { getUserProfile } from "@/app/(with-contexts)/helpers";
@@ -77,8 +80,7 @@ export function LoginForm({
         if (!executeRecaptcha) {
             toast({
                 title: TOAST_TITLE_ERROR,
-                description:
-                    "reCAPTCHA service not available. Please try again later.",
+                description: CHECKOUT_RECAPTCHA_UNAVAILABLE,
                 variant: "destructive",
             });
             setLoading(false);
@@ -89,7 +91,7 @@ export function LoginForm({
         if (!recaptchaToken) {
             toast({
                 title: TOAST_TITLE_ERROR,
-                description: "reCAPTCHA validation failed. Please try again.",
+                description: CHECKOUT_RECAPTCHA_FAILED,
                 variant: "destructive",
             });
             setLoading(false);
@@ -114,7 +116,7 @@ export function LoginForm({
             ) {
                 toast({
                     title: TOAST_TITLE_ERROR,
-                    description: `reCAPTCHA verification failed. ${recaptchaData.score ? `Score: ${recaptchaData.score.toFixed(2)}.` : ""} Please try again.`,
+                    description: CHECKOUT_RECAPTCHA_FAILED,
                     variant: "destructive",
                 });
                 setLoading(false);
@@ -123,7 +125,7 @@ export function LoginForm({
         } catch (err) {
             toast({
                 title: TOAST_TITLE_ERROR,
-                description: "reCAPTCHA verification failed. Please try again.",
+                description: CHECKOUT_RECAPTCHA_FAILED,
                 variant: "destructive",
             });
             setLoading(false);
@@ -344,9 +346,9 @@ export function LoginForm({
                 />
             ))}
             <Caption theme={theme.theme} className="text-center">
-                {LOGIN_FORM_DISCLAIMER}
+                {CHECKOUT_TERMS_DISCLAIMER}
                 <Link href="/p/terms">
-                    <span className="underline">Terms</span>
+                    <span className="underline">{CHECKOUT_TERMS_LINK}</span>
                 </Link>
             </Caption>
             <RecaptchaScriptLoader />
