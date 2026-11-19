@@ -4,6 +4,7 @@ import { Constants } from "@courselit/common-models";
 import {
     CHECKOUT_PLAN_HEADING,
     CHECKOUT_PERSONAL_INFORMATION_LABEL,
+    CHECKOUT_TESTIMONIALS_HEADING,
 } from "@ui-config/strings";
 
 jest.mock("@components/contexts", () => {
@@ -128,5 +129,25 @@ describe("Checkout", () => {
             planHeading.compareDocumentPosition(loginHeading) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it("renders the social proof for a community checkout", () => {
+        renderCheckout(Constants.MembershipEntityType.COMMUNITY);
+
+        expect(
+            screen.getByRole("heading", {
+                name: CHECKOUT_TESTIMONIALS_HEADING,
+            }),
+        ).toBeTruthy();
+    });
+
+    it("does not render the social proof for a course checkout", () => {
+        renderCheckout(Constants.MembershipEntityType.COURSE);
+
+        expect(
+            screen.queryByRole("heading", {
+                name: CHECKOUT_TESTIMONIALS_HEADING,
+            }),
+        ).toBeNull();
     });
 });
