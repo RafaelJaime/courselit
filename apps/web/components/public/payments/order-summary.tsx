@@ -70,7 +70,10 @@ export function MobileOrderSummary({
 }: OrderSummaryProps) {
     return (
         <div className="md:hidden w-full sticky top-20 z-11 mb-8">
-            <PageCard theme={theme.theme}>
+            <PageCard
+                theme={theme.theme}
+                className="rounded-3xl overflow-hidden"
+            >
                 <PageCardContent theme={theme.theme} className="p-0">
                     <div className="w-full">
                         <div
@@ -127,7 +130,7 @@ export function MobileOrderSummary({
                         >
                             <div className="p-4 space-y-4">
                                 <div className="flex gap-4">
-                                    <div className="h-16 w-16 relative rounded-lg overflow-hidden">
+                                    <div className="h-16 w-16 relative rounded-xl overflow-hidden">
                                         <Image
                                             src={
                                                 product.featuredImage ||
@@ -200,13 +203,16 @@ export function DesktopOrderSummary({
 >) {
     return (
         <div className="hidden md:block sticky top-20 self-start">
-            <PageCard theme={theme.theme}>
+            <PageCard
+                theme={theme.theme}
+                className="rounded-3xl overflow-hidden"
+            >
                 <PageCardContent theme={theme.theme} className="space-y-4">
                     <Header3 theme={theme.theme}>
                         {CHECKOUT_PAGE_ORDER_SUMMARY}
                     </Header3>
                     <div className="flex items-start gap-4 pb-4">
-                        <div className="h-16 w-16 relative rounded-lg overflow-hidden bg-muted">
+                        <div className="h-16 w-16 relative rounded-xl overflow-hidden bg-muted">
                             <Image
                                 src={
                                     product.featuredImage ||

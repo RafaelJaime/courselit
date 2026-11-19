@@ -20,7 +20,13 @@ import {
 } from "@components/contexts";
 import { useToast } from "@courselit/components-library";
 import {
-    LOGIN_CODE_INTIMATION_MESSAGE,
+    CHECKOUT_CODE_INTIMATION_MESSAGE,
+    CHECKOUT_CODE_PLACEHOLDER,
+    CHECKOUT_CODE_TOO_SHORT,
+    CHECKOUT_CONTINUE_BUTTON,
+    CHECKOUT_EMAIL_INVALID,
+    CHECKOUT_EMAIL_PLACEHOLDER,
+    CHECKOUT_VERIFY_CODE_BUTTON,
     LOGIN_FORM_DISCLAIMER,
     TOAST_TITLE_ERROR,
 } from "@ui-config/strings";
@@ -34,8 +40,8 @@ import RecaptchaScriptLoader from "@components/recaptcha-script-loader";
 import ExternalLoginButton from "@/components/auth/external-login-button";
 
 const loginFormSchema = z.object({
-    email: z.string().email("Invalid email address"),
-    otp: z.string().min(6, "OTP must be at least 6 characters").optional(),
+    email: z.string().email(CHECKOUT_EMAIL_INVALID),
+    otp: z.string().min(6, CHECKOUT_CODE_TOO_SHORT).optional(),
 });
 
 type LoginStep = "email" | "otp" | "complete";
@@ -147,7 +153,7 @@ export function LoginForm({
         if (!emailValue || !/\S+@\S+\.\S+/.test(emailValue)) {
             form.setError("email", {
                 type: "manual",
-                message: "Please enter a valid email address",
+                message: CHECKOUT_EMAIL_INVALID,
             });
             return;
         }
@@ -234,7 +240,10 @@ export function LoginForm({
                                                 <Input
                                                     theme={theme.theme}
                                                     type="email"
-                                                    placeholder="Email address"
+                                                    className="rounded-full px-5"
+                                                    placeholder={
+                                                        CHECKOUT_EMAIL_PLACEHOLDER
+                                                    }
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -270,11 +279,11 @@ export function LoginForm({
                                 <Button
                                     type="button"
                                     onClick={handleRequestOTP}
-                                    className="w-full"
+                                    className="w-full rounded-full"
                                     disabled={loading}
                                     theme={theme.theme}
                                 >
-                                    Continue
+                                    {CHECKOUT_CONTINUE_BUTTON}
                                 </Button>
                             </>
                         )}
@@ -282,7 +291,7 @@ export function LoginForm({
                         {loginStep === "otp" && (
                             <>
                                 <Text1 className="mb-2" theme={theme.theme}>
-                                    {LOGIN_CODE_INTIMATION_MESSAGE}
+                                    {CHECKOUT_CODE_INTIMATION_MESSAGE}
                                 </Text1>
                                 <FormField
                                     control={form.control}
@@ -293,7 +302,12 @@ export function LoginForm({
                                                 <Input
                                                     theme={theme.theme}
                                                     type="text"
-                                                    placeholder="Enter OTP"
+                                                    className="rounded-full px-5"
+                                                    placeholder={
+                                                        CHECKOUT_CODE_PLACEHOLDER
+                                                    }
+                                                    autoComplete="one-time-code"
+                                                    inputMode="numeric"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -304,11 +318,11 @@ export function LoginForm({
                                 <Button
                                     type="button"
                                     onClick={handleVerifyOTP}
-                                    className="w-full"
+                                    className="w-full rounded-full"
                                     disabled={loading}
                                     theme={theme.theme}
                                 >
-                                    Verify OTP
+                                    {CHECKOUT_VERIFY_CODE_BUTTON}
                                 </Button>
                             </>
                         )}

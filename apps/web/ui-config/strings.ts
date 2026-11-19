@@ -983,3 +983,19 @@ export const INSTRUCTORS_VIEWER_HEADING = "Profesores";
 export const LESSON_INSTRUCTOR_PREFIX = "Con";
 export const SEE_PLANS_BUTTON_TEXT = "Ver planes";
 export const SEE_PLANS_HREF = "/#planes";
+
+// Checkout (fit-leads membership, Spanish)
+export const CHECKOUT_PERSONAL_INFORMATION_LABEL = "Tus datos";
+export const CHECKOUT_PLAN_HEADING = "Elige tu plan";
+export const CHECKOUT_EMAIL_PLACEHOLDER = "Tu email";
+export const CHECKOUT_CONTINUE_BUTTON = "Continuar";
+export const CHECKOUT_EMAIL_INVALID = "Escribe un email válido";
+export const CHECKOUT_CODE_INTIMATION_MESSAGE =
+    "Te enviamos un código de 6 dígitos a tu email. Escríbelo aquí para continuar.";
+export const CHECKOUT_CODE_PLACEHOLDER = "Código";
+export const CHECKOUT_CODE_TOO_SHORT = "El código tiene 6 dígitos";
+export const CHECKOUT_VERIFY_CODE_BUTTON = "Confirmar código";
+export const CHECKOUT_EMAIL_LABEL = "Email:";
+export const CHECKOUT_NAME_LABEL = "Nombre:";
+export const CHECKOUT_SUBMIT_BUTTON = "Completar compra";
+export const CHECKOUT_SUBMITTING = "Procesando...";

@@ -37,7 +37,14 @@ import { Button, Header3, Text1 } from "@courselit/page-primitives";
 import { PaymentPlanCard } from "./payment-plan-card";
 import { MobileOrderSummary, DesktopOrderSummary } from "./order-summary";
 import type { RuntimeLoginProvider } from "@/lib/login-providers";
-import { LOGIN_FORM_PERSONAL_INFORMATION_LABEL } from "@ui-config/strings";
+import {
+    CHECKOUT_EMAIL_LABEL,
+    CHECKOUT_NAME_LABEL,
+    CHECKOUT_PERSONAL_INFORMATION_LABEL,
+    CHECKOUT_PLAN_HEADING,
+    CHECKOUT_SUBMITTING,
+    CHECKOUT_SUBMIT_BUTTON,
+} from "@ui-config/strings";
 const { PaymentPlanType: paymentPlanType } = Constants;
 
 export interface Product {
@@ -396,44 +403,15 @@ export default function Checkout({
                             </div>
                         ) : (
                             <>
-                                <div className="space-y-4">
-                                    <Header3 theme={theme.theme}>
-                                        {LOGIN_FORM_PERSONAL_INFORMATION_LABEL}
-                                    </Header3>
-                                    {!isLoggedIn ? (
-                                        <LoginForm
-                                            onLoginComplete={
-                                                handleLoginComplete
-                                            }
-                                            loginProviders={loginProviders}
-                                            type={type}
-                                            id={id}
-                                        />
-                                    ) : (
-                                        <div className="text-sm space-y-2">
-                                            <Text1 theme={theme.theme}>
-                                                <span className="font-semibold">
-                                                    Email:
-                                                </span>{" "}
-                                                {userEmail}
-                                            </Text1>
-                                            <Text1 theme={theme.theme}>
-                                                <span className="font-semibold">
-                                                    Name:
-                                                </span>{" "}
-                                                {userName}
-                                            </Text1>
-                                        </div>
-                                    )}
-                                </div>
                                 <FormProvider {...form}>
                                     <form
+                                        id="checkout-form"
                                         onSubmit={form.handleSubmit(onSubmit)}
                                         className="space-y-6"
                                     >
                                         <div className="mb-6 space-y-4">
                                             <Header3 theme={theme.theme}>
-                                                Select Your Plan
+                                                {CHECKOUT_PLAN_HEADING}
                                             </Header3>
                                             <FormField
                                                 control={form.control}
@@ -479,9 +457,6 @@ export default function Checkout({
                                                                                 }
                                                                                 isRecommended={
                                                                                     isRecommended
-                                                                                }
-                                                                                isLoggedIn={
-                                                                                    isLoggedIn
                                                                                 }
                                                                                 currencySymbol={
                                                                                     currencySymbol
@@ -529,30 +504,59 @@ export default function Checkout({
                                                     )}
                                                 />
                                             )}
-                                        <Button
-                                            type="submit"
-                                            disabled={
-                                                isSubmitting ||
-                                                !isLoggedIn ||
-                                                !form.formState.isValid ||
-                                                (selectedPlan?.type ===
-                                                    paymentPlanType.FREE &&
-                                                    product.type ===
-                                                        Constants
-                                                            .MembershipEntityType
-                                                            .COMMUNITY &&
-                                                    !form.getValues(
-                                                        "joiningReason",
-                                                    ))
-                                            }
-                                            theme={theme.theme}
-                                        >
-                                            {isSubmitting
-                                                ? "Working..."
-                                                : "Complete Purchase"}
-                                        </Button>
                                     </form>
                                 </FormProvider>
+                                <div className="space-y-4">
+                                    <Header3 theme={theme.theme}>
+                                        {CHECKOUT_PERSONAL_INFORMATION_LABEL}
+                                    </Header3>
+                                    {!isLoggedIn ? (
+                                        <LoginForm
+                                            onLoginComplete={
+                                                handleLoginComplete
+                                            }
+                                            loginProviders={loginProviders}
+                                            type={type}
+                                            id={id}
+                                        />
+                                    ) : (
+                                        <div className="text-sm space-y-2">
+                                            <Text1 theme={theme.theme}>
+                                                <span className="font-semibold">
+                                                    {CHECKOUT_EMAIL_LABEL}
+                                                </span>{" "}
+                                                {userEmail}
+                                            </Text1>
+                                            <Text1 theme={theme.theme}>
+                                                <span className="font-semibold">
+                                                    {CHECKOUT_NAME_LABEL}
+                                                </span>{" "}
+                                                {userName}
+                                            </Text1>
+                                        </div>
+                                    )}
+                                </div>
+                                <Button
+                                    type="submit"
+                                    form="checkout-form"
+                                    className="w-full rounded-full md:w-auto"
+                                    disabled={
+                                        isSubmitting ||
+                                        !isLoggedIn ||
+                                        !form.formState.isValid ||
+                                        (selectedPlan?.type ===
+                                            paymentPlanType.FREE &&
+                                            product.type ===
+                                                Constants.MembershipEntityType
+                                                    .COMMUNITY &&
+                                            !form.getValues("joiningReason"))
+                                    }
+                                    theme={theme.theme}
+                                >
+                                    {isSubmitting
+                                        ? CHECKOUT_SUBMITTING
+                                        : CHECKOUT_SUBMIT_BUTTON}
+                                </Button>
                             </>
                         )}
                     </div>

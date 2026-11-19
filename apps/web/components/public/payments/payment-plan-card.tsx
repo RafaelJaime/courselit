@@ -21,7 +21,6 @@ export interface PaymentPlanCardProps {
     plan: PaymentPlan;
     isSelected: boolean;
     isRecommended: boolean;
-    isLoggedIn: boolean;
     currencySymbol: string;
     includedProducts: Course[];
     theme: any;
@@ -49,7 +48,6 @@ export function PaymentPlanCard({
     plan,
     isSelected,
     isRecommended,
-    isLoggedIn,
     currencySymbol,
     includedProducts,
     theme,
@@ -63,11 +61,7 @@ export function PaymentPlanCard({
     return (
         <FormItem className="flex items-start space-x-3 space-y-0">
             <FormControl>
-                <RadioGroupItem
-                    value={plan.planId}
-                    disabled={!isLoggedIn}
-                    className="mt-1"
-                />
+                <RadioGroupItem value={plan.planId} className="mt-1" />
             </FormControl>
             <div className="flex-1">
                 <FormLabel className="cursor-pointer">
@@ -76,10 +70,8 @@ export function PaymentPlanCard({
                         className={`transition-all ${
                             isSelected
                                 ? "border-primary ring-2 ring-primary/20"
-                                : isLoggedIn
-                                  ? "hover:border-muted-foreground/50"
-                                  : ""
-                        } ${!isLoggedIn ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                : "hover:border-muted-foreground/50"
+                        } cursor-pointer rounded-3xl`}
                     >
                         <PageCardContent theme={theme.theme}>
                             <PageCardHeader theme={theme.theme}>
