@@ -999,10 +999,6 @@ export const CHECKOUT_EMAIL_LABEL = "Email:";
 export const CHECKOUT_NAME_LABEL = "Nombre:";
 export const CHECKOUT_SUBMIT_BUTTON = "Completar compra";
 export const CHECKOUT_SUBMITTING = "Procesando...";
-export const CHECKOUT_TESTIMONIALS_HEADING =
-    "Lo que dicen quienes ya están dentro";
-export const CHECKOUT_CLIENTS_HEADING = "Con quién hemos trabajado";
-export const CHECKOUT_PLAY_TESTIMONIAL_PREFIX = "Reproducir testimonio de";
 export const CHECKOUT_HEADING = "Finalizar compra";
 export const CHECKOUT_SUBMIT_HINT = "Introduce tu email para continuar";
 export const CHECKOUT_ORDER_SUMMARY_HEADING = "Resumen del pedido";

@@ -4,7 +4,6 @@ import { Constants } from "@courselit/common-models";
 import {
     CHECKOUT_PLAN_HEADING,
     CHECKOUT_PERSONAL_INFORMATION_LABEL,
-    CHECKOUT_TESTIMONIALS_HEADING,
 } from "@ui-config/strings";
 
 jest.mock("@components/contexts", () => {
@@ -132,24 +131,14 @@ describe("Checkout", () => {
         ).toBeTruthy();
     });
 
-    it("renders the social proof for a community checkout", () => {
-        renderCheckout(Constants.MembershipEntityType.COMMUNITY);
+    it.each([
+        Constants.MembershipEntityType.COMMUNITY,
+        Constants.MembershipEntityType.COURSE,
+    ])("does not render testimonials or a clients wall (%s)", (type) => {
+        renderCheckout(type);
 
-        expect(
-            screen.getByRole("heading", {
-                name: CHECKOUT_TESTIMONIALS_HEADING,
-            }),
-        ).toBeTruthy();
-    });
-
-    it("does not render the social proof for a course checkout", () => {
-        renderCheckout(Constants.MembershipEntityType.COURSE);
-
-        expect(
-            screen.queryByRole("heading", {
-                name: CHECKOUT_TESTIMONIALS_HEADING,
-            }),
-        ).toBeNull();
+        expect(screen.queryByText(/quienes ya están dentro/i)).toBeNull();
+        expect(screen.queryByText(/con quién hemos trabajado/i)).toBeNull();
     });
 
     it("keeps the pay button disabled, full width, with a hint while logged out", () => {

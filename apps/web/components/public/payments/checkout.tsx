@@ -55,7 +55,6 @@ import {
     CHECKOUT_SUBMITTING,
     CHECKOUT_SUBMIT_BUTTON,
 } from "@ui-config/strings";
-import { CheckoutSocialProof } from "./checkout-social-proof";
 const { PaymentPlanType: paymentPlanType } = Constants;
 
 export interface Product {
@@ -584,10 +583,6 @@ export default function Checkout({
                                     </p>
                                 )}
                             </>
-                        )}
-                        {product.type ===
-                            Constants.MembershipEntityType.COMMUNITY && (
-                            <CheckoutSocialProof />
                         )}
                     </div>
                     <DesktopOrderSummary
