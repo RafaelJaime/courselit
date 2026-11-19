@@ -16,7 +16,7 @@ import { PaymentPlan, Course, Constants } from "@courselit/common-models";
 import { getPlanPrice } from "@ui-lib/utils";
 import {
     CHECKOUT_ONE_TIME_LABEL,
-    CHECKOUT_PRODUCTS_INCLUDED,
+    CHECKOUT_PLAN_INCLUDES,
     CHECKOUT_RECOMMENDED_BADGE,
 } from "@ui-config/strings";
 import { checkoutPeriod } from "./checkout-format";
@@ -140,31 +140,28 @@ export function PaymentPlanCard({
                                 )}
                             </div>
 
-                            <div className="space-y-3">
-                                {planIncludedProducts.length > 0 && (
-                                    <div className="flex items-center gap-2 text-sm text-foreground">
-                                        <Package className="w-4 h-4 text-muted-foreground" />
+                            {planIncludedProducts.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Package className="w-4 h-4" />
                                         <Text2 theme={theme.theme}>
-                                            {planIncludedProducts.length}{" "}
-                                            {CHECKOUT_PRODUCTS_INCLUDED}
+                                            {CHECKOUT_PLAN_INCLUDES}
                                         </Text2>
                                     </div>
-                                )}
-
-                                {planIncludedProducts.length > 0 && (
                                     <div className="flex flex-wrap gap-2">
                                         {planIncludedProducts.map((product) => (
                                             <Badge
                                                 key={product.title}
                                                 theme={theme.theme}
                                                 variant="secondary"
+                                                className="rounded-full px-3"
                                             >
                                                 {product.title}
                                             </Badge>
                                         ))}
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {plan.description && (
                                 <div className="mt-4">

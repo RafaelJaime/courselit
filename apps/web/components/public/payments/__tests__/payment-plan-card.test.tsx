@@ -88,4 +88,38 @@ describe("PaymentPlanCard copy", () => {
         expect(container.textContent).toContain("pago único");
         expect(container.textContent).not.toContain("one-time");
     });
+
+    it("lists included products under 'Incluye' without a counter", () => {
+        const { container } = render(
+            <PaymentPlanCard
+                plan={{
+                    planId: "m",
+                    name: "Mensual",
+                    type: Constants.PaymentPlanType.SUBSCRIPTION,
+                    subscriptionMonthlyAmount: 227,
+                    includedProducts: ["c1"],
+                    entityId: "community",
+                    entityType: Constants.MembershipEntityType.COMMUNITY,
+                }}
+                isSelected={false}
+                isRecommended={false}
+                currencySymbol="$"
+                includedProducts={
+                    [
+                        {
+                            courseId: "c1",
+                            title: "Membresía Entrenador Online",
+                        },
+                    ] as any
+                }
+                theme={{ theme: {} }}
+            />,
+        );
+
+        expect(container.textContent).toContain("Incluye");
+        expect(container.textContent).toContain("Membresía Entrenador Online");
+        expect(container.textContent).not.toMatch(
+            /\d+\s*productos?\s+incluidos/,
+        );
+    });
 });
