@@ -16,6 +16,7 @@ import { sanitizeEmail } from "./lib/sanitize-email";
 import DomainModel, { Domain } from "@models/Domain";
 import UserModel from "@models/User";
 import { als } from "./async-local-storage";
+import { emailAndPasswordConfig } from "./lib/email-password-config";
 
 const client = new MongoClient(
     process.env.DB_CONNECTION_STRING || "mongodb://localhost:27017",
@@ -151,6 +152,7 @@ const createAuthConfig = (baseURL = ""): any => ({
             },
         },
     },
+    emailAndPassword: emailAndPasswordConfig,
     account: {
         storeStateStrategy: "cookie",
         accountLinking: {
