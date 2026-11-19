@@ -226,20 +226,30 @@ export const DELETE_COURSE_POPUP_HEADER = "Delete course?";
 export const POPUP_OK_ACTION = "Delete";
 export const POPUP_CANCEL_ACTION = "Cancel";
 export const BTN_BACK_TO_CONTENT = "Back to content";
-export const LOGIN_SECTION_HEADER = "Sign In";
+export const LOGIN_SECTION_HEADER = "Iniciar sesión";
 export const LABEL_GROUP_NAME = "Name";
 export const LABEL_DRIP_EMAIL_SUBJECT = "Subject";
 export const LABEL_DRIP_DELAY = "Number of days after the last drip";
 export const LABEL_DRIP_DATE = "Date";
-export const BTN_LOGIN = "Continue";
-export const BTN_LOGIN_NO_CODE = "Resend";
+export const BTN_LOGIN = "Continuar";
+export const BTN_LOGIN_NO_CODE = "Reenviar";
 export const LOGIN_FORM_LABEL =
-    "Enter your email to sign in or create an account";
-export const LOGIN_NO_CODE = "Did not get the code?";
-export const BTN_LOGIN_GET_CODE = "Get code";
+    "Introduce tu email para entrar o crear una cuenta";
+export const LOGIN_NO_CODE = "¿No te ha llegado?";
+export const BTN_LOGIN_GET_CODE = "Recibir código";
 export const LOGIN_CODE_INTIMATION_MESSAGE =
-    "Enter the code sent to your email";
-export const LOGIN_FORM_DISCLAIMER = "By submitting, you accept the ";
+    "Escribe el código que te hemos enviado a";
+export const LOGIN_FORM_DISCLAIMER = "Al continuar, aceptas los ";
+export const LOGIN_FORM_TERMS_LINK = "Términos";
+export const LOGIN_EMAIL_PLACEHOLDER = "Tu email";
+export const LOGIN_CODE_PLACEHOLDER = "Código";
+export const LOGIN_SIGN_IN_FAILED = "No hemos podido iniciar sesión:";
+export const LOGIN_UNEXPECTED_ERROR =
+    "Ha ocurrido un error inesperado. Inténtalo de nuevo.";
+export const LOGIN_RECAPTCHA_UNAVAILABLE =
+    "La verificación anti-spam no está disponible. Inténtalo más tarde.";
+export const LOGIN_RECAPTCHA_FAILED =
+    "No hemos podido verificar que no eres un robot. Inténtalo de nuevo.";
 export const LOGIN_PASSWORD_TOGGLE = "Entrar con contraseña";
 export const LOGIN_PASSWORD_BACK_TO_CODE = "Usar código por email";
 export const LOGIN_PASSWORD_PLACEHOLDER = "Contraseña";

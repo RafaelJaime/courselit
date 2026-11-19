@@ -102,6 +102,27 @@ describe("LoginForm password option", () => {
         jest.clearAllMocks();
     });
 
+    it("shows the email step in Spanish", () => {
+        render(<LoginForm />);
+
+        expect(
+            screen.getByText(
+                "Introduce tu email para entrar o crear una cuenta",
+            ),
+        ).toBeInTheDocument();
+        expect(screen.getByPlaceholderText("Tu email")).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Recibir código" }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(/Al continuar, aceptas los/),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("link", { name: "Términos" }),
+        ).toBeInTheDocument();
+        expect(screen.queryByText(/By submitting/)).not.toBeInTheDocument();
+    });
+
     it("shows the email code form by default with a discreet password toggle", () => {
         render(<LoginForm />);
 
@@ -146,7 +167,7 @@ describe("LoginForm password option", () => {
         fireEvent.click(
             screen.getByRole("button", { name: LOGIN_PASSWORD_TOGGLE }),
         );
-        fireEvent.change(screen.getByPlaceholderText("Enter your email"), {
+        fireEvent.change(screen.getByPlaceholderText("Tu email"), {
             target: { value: "  Alumno@Example.com " },
         });
         fireEvent.change(
@@ -176,7 +197,7 @@ describe("LoginForm password option", () => {
         fireEvent.click(
             screen.getByRole("button", { name: LOGIN_PASSWORD_TOGGLE }),
         );
-        fireEvent.change(screen.getByPlaceholderText("Enter your email"), {
+        fireEvent.change(screen.getByPlaceholderText("Tu email"), {
             target: { value: "alumno@example.com" },
         });
         fireEvent.change(
