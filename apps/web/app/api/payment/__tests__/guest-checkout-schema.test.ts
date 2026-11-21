@@ -79,12 +79,14 @@ describe("guest checkout persistence", () => {
             email: `${SUITE}-u@example.com`,
             unsubscribeToken: `${SUITE}-tok`,
             phone: "+34 600 111 222",
+            guestUnverified: true,
         });
 
         const user = await UserModel.findOne({
             userId: `${SUITE}-u`,
-        }).lean<{ phone?: string }>();
+        }).lean<{ phone?: string; guestUnverified?: boolean }>();
 
         expect(user?.phone).toBe("+34 600 111 222");
+        expect(user?.guestUnverified).toBe(true);
     });
 });

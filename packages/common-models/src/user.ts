@@ -10,6 +10,7 @@ export default interface User {
     purchases: Progress[];
     bio?: string;
     phone?: string;
+    guestUnverified?: boolean;
     permissions: string[];
     createdAt: Date;
     updatedAt: Date;

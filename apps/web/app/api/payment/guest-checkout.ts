@@ -11,6 +11,8 @@ import { getBackendAddress } from "@/app/actions";
 import { als } from "../../../async-local-storage";
 import { sanitizeEmail } from "@/lib/sanitize-email";
 import constants from "@config/constants";
+import { error } from "@/services/logger";
+import { GUEST_CLAIM_ALS_KEY } from "./guest-account";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -83,13 +85,22 @@ export function parseGuestEmail(raw: unknown): string | null {
  * the buyer's account, then finds or creates the membership the rest of the
  * webhook works on. Safe to call again for the same invoice.
  */
+export interface GuestMembershipResolution {
+    membership: Membership;
+    /**
+     * The email belongs to a member who already has (or was refused) access.
+     * The membership was left alone; only the payment needs recording.
+     */
+    protectedExisting: boolean;
+}
+
 export async function resolveGuestMembership({
     domain,
     invoiceId,
 }: {
     domain: DomainWithId;
     invoiceId: string;
-}): Promise<Membership | null> {
+}): Promise<GuestMembershipResolution | null> {
     const invoice = await InvoiceModel.findOne({
         domain: domain._id,
         invoiceId,
@@ -99,14 +110,20 @@ export async function resolveGuestMembership({
     }
 
     if (invoice.guestUserId) {
-        return MembershipModel.findOne({
+        const membership = await MembershipModel.findOne({
             domain: domain._id,
             membershipId: invoice.membershipId,
         });
+        return membership ? { membership, protectedExisting: false } : null;
     }
 
+    // Legacy users may be stored with other casing or stray spaces.
+    const emailPattern = new RegExp(
+        `^\\s*${invoice.guestEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`,
+        "i",
+    );
     const findUser = () =>
-        UserModel.findOne({ domain: domain._id, email: invoice.guestEmail });
+        UserModel.findOne({ domain: domain._id, email: emailPattern });
     let existingUser = await findUser();
     let user = existingUser;
     if (!user) {
@@ -116,6 +133,11 @@ export async function resolveGuestMembership({
                 email: invoice.guestEmail,
                 lead: constants.leadWebsite,
             });
+            // The payer has not proven the email: see guest-account.ts.
+            await UserModel.updateOne(
+                { domain: domain._id, userId: user.userId },
+                { $set: { guestUnverified: true } },
+            );
         } catch (err: any) {
             // A concurrent webhook created it first. Whoever it belongs to,
             // it is not treated as created by this checkout (fail safe).
@@ -136,6 +158,37 @@ export async function resolveGuestMembership({
         entityId: invoice.guestEntityId!,
         planId: invoice.guestPlanId!,
     });
+    if (
+        membership.status === Constants.MembershipStatus.ACTIVE ||
+        membership.status === Constants.MembershipStatus.REJECTED
+    ) {
+        // Never rewrite someone's live (or refused) membership: that would
+        // orphan their subscription. The money was taken, so record the
+        // payment and flag it for a refund.
+        error(
+            "Guest checkout paid for a membership that was already active or rejected; refund the payment",
+            {
+                invoiceId,
+                membershipId: membership.membershipId,
+                userId: user.userId,
+            },
+        );
+        await InvoiceModel.updateOne(
+            {
+                domain: domain._id,
+                invoiceId,
+                guestUserId: { $exists: false },
+            },
+            {
+                $set: {
+                    guestUserId: user.userId,
+                    guestAccountCreated: false,
+                },
+            },
+        );
+        return { membership, protectedExisting: true };
+    }
+
     membership.paymentPlanId = invoice.guestPlanId!;
     membership.sessionId = invoice.membershipSessionId;
     membership.subscriptionId = undefined;
@@ -158,7 +211,7 @@ export async function resolveGuestMembership({
         },
     );
 
-    return membership;
+    return { membership, protectedExisting: false };
 }
 
 export type GuestSessionResult =
@@ -267,6 +320,7 @@ async function createSessionCookies(
     const store = new Map<string, any>();
     store.set("domain", headers.get("domain"));
     store.set("domainId", headers.get("domainId"));
+    store.set(GUEST_CLAIM_ALS_KEY, true);
 
     return als.run(store, async () => {
         const otp = await api.createVerificationOTP({

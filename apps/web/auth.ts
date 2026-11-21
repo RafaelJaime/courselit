@@ -1,4 +1,5 @@
 import { APIError, betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { customSession, emailOTP } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 import { InternalUser } from "@courselit/orm-models";
@@ -17,6 +18,10 @@ import DomainModel, { Domain } from "@models/Domain";
 import UserModel from "@models/User";
 import { als } from "./async-local-storage";
 import { emailAndPasswordConfig } from "./lib/email-password-config";
+import {
+    GUEST_CLAIM_ALS_KEY,
+    revokeGuestSessionsAfterOtpSignIn,
+} from "./app/api/payment/guest-account";
 
 const client = new MongoClient(
     process.env.DB_CONNECTION_STRING || "mongodb://localhost:27017",
@@ -234,6 +239,25 @@ const createAuthConfig = (baseURL = ""): any => ({
             },
         }),
     ],
+    hooks: {
+        // A real email-code sign-in proves the email: sessions that a guest
+        // checkout opened for the payer on that account are revoked.
+        after: createAuthMiddleware(async (ctx) => {
+            if (ctx.path !== "/sign-in/email-otp") {
+                return;
+            }
+            const newSession = ctx.context.newSession;
+            if (!newSession) {
+                return;
+            }
+            await revokeGuestSessionsAfterOtpSignIn({
+                userId: newSession.user.id,
+                keepToken: newSession.session.token,
+                isGuestClaim: als.getStore()?.get(GUEST_CLAIM_ALS_KEY) === true,
+                internalAdapter: ctx.context.internalAdapter,
+            });
+        }),
+    },
     databaseHooks: {
         user: {
             create: {

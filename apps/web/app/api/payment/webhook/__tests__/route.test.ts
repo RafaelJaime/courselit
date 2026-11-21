@@ -89,7 +89,10 @@ describe("payment webhook", () => {
     it("creates the account and activates the membership of a guest payment", async () => {
         const membership = { membershipId: "real", paymentPlanId: "plan-1" };
         (MembershipModel.findOne as jest.Mock).mockResolvedValue(null);
-        resolveGuestMembership.mockResolvedValue(membership);
+        resolveGuestMembership.mockResolvedValue({
+            membership,
+            protectedExisting: false,
+        });
 
         const response = await POST(request);
 
@@ -164,5 +167,92 @@ describe("payment webhook guest paid timestamp", () => {
         await POST(request);
 
         expect(invoice.guestPaidAt).toBeUndefined();
+    });
+});
+
+describe("payment webhook guest subscription and protected members", () => {
+    const request = {
+        json: jest.fn().mockResolvedValue({}),
+        headers: { get: jest.fn().mockReturnValue("school") },
+    } as unknown as NextRequest;
+    const subscriptionPlan = {
+        planId: "plan-1",
+        type: Constants.PaymentPlanType.SUBSCRIPTION,
+    };
+    const setup = (invoice: any) => {
+        (DomainModel.findOne as jest.Mock).mockResolvedValue(domain);
+        (getPaymentMethod as jest.Mock).mockResolvedValue({
+            name: "stripe",
+            verify: jest.fn().mockResolvedValue(true),
+            getMetadata: jest.fn().mockReturnValue({
+                membershipId: "placeholder",
+                invoiceId: "inv-1",
+            }),
+            getPaymentIdentifier: jest.fn().mockReturnValue("cs_1"),
+            getSubscriptionId: jest.fn().mockReturnValue("sub_1"),
+            getName: jest.fn().mockReturnValue("stripe"),
+        });
+        (MembershipModel.findOne as jest.Mock).mockResolvedValue(null);
+        (PaymentPlanModel.findOne as jest.Mock).mockResolvedValue(
+            subscriptionPlan,
+        );
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(invoice);
+    };
+
+    beforeEach(() => {
+        activateMembership.mockClear();
+    });
+
+    it("stores the Stripe subscription id on the membership of a guest purchase", async () => {
+        const membership: any = {
+            membershipId: "real",
+            paymentPlanId: "plan-1",
+            subscriptionId: undefined,
+            save: jest.fn(),
+        };
+        setup({ status: Constants.InvoiceStatus.PENDING, save: jest.fn() });
+        resolveGuestMembership.mockResolvedValue({
+            membership,
+            protectedExisting: false,
+        });
+
+        await POST(request);
+
+        expect(membership.subscriptionId).toBe("sub_1");
+        expect(membership.subscriptionMethod).toBe("stripe");
+        expect(membership.save).toHaveBeenCalled();
+        expect(activateMembership).toHaveBeenCalledWith(
+            domain,
+            membership,
+            subscriptionPlan,
+        );
+    });
+
+    it("only records the payment when an active member's email was used", async () => {
+        const membership: any = {
+            membershipId: "existing",
+            paymentPlanId: "plan-1",
+            subscriptionId: undefined,
+            status: Constants.MembershipStatus.ACTIVE,
+            save: jest.fn(),
+        };
+        const invoice: any = {
+            status: Constants.InvoiceStatus.PENDING,
+            save: jest.fn(),
+        };
+        setup(invoice);
+        resolveGuestMembership.mockResolvedValue({
+            membership,
+            protectedExisting: true,
+        });
+
+        const response = await POST(request);
+
+        expect((await response.json()).message).toBe("success");
+        expect(invoice.status).toBe(Constants.InvoiceStatus.PAID);
+        expect(invoice.save).toHaveBeenCalled();
+        expect(membership.subscriptionId).toBeUndefined();
+        expect(membership.save).not.toHaveBeenCalled();
+        expect(activateMembership).not.toHaveBeenCalled();
     });
 });

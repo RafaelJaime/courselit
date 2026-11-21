@@ -43,12 +43,28 @@ export async function POST(req: NextRequest) {
 
         // A guest checkout has no membership until the payment is confirmed:
         // its account and membership are created here.
-        const membership =
-            (await getMembership(domain._id, membershipId)) ||
-            ((await resolveGuestMembership({
-                domain,
-                invoiceId,
-            })) as Membership | null);
+        let membership = await getMembership(domain._id, membershipId);
+        if (!membership) {
+            const guest = await resolveGuestMembership({ domain, invoiceId });
+            if (guest?.protectedExisting) {
+                // The email belongs to an already active member: record the
+                // payment, but touch neither their subscription nor access.
+                await handleInvoice(
+                    domain,
+                    invoiceId,
+                    guest.membership,
+                    await getPaymentPlan(
+                        domain._id,
+                        guest.membership.paymentPlanId!,
+                    ),
+                    paymentMethod,
+                    currencyISOCode,
+                    body,
+                );
+                return Response.json({ message: "success" });
+            }
+            membership = guest?.membership ?? null;
+        }
         if (!membership) {
             return Response.json({ message: "Membership not found" });
         }

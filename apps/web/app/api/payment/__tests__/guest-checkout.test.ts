@@ -8,6 +8,8 @@ import InvoiceModel from "@models/Invoice";
 import UserModel from "@models/User";
 import MembershipModel from "@models/Membership";
 import { createHash } from "crypto";
+import { als } from "../../../../async-local-storage";
+import { GUEST_CLAIM_ALS_KEY } from "../guest-account";
 import {
     GUEST_CLAIM_COOKIE,
     buildGuestClaimCookie,
@@ -25,6 +27,7 @@ jest.mock("@/graphql/users/logic", () => ({
     createUser: jest.fn(),
     getMembership: jest.fn(),
 }));
+jest.mock("@/services/logger", () => ({ error: jest.fn() }));
 jest.mock("@/auth", () => ({
     getAuth: jest.fn(),
 }));
@@ -34,6 +37,7 @@ jest.mock("@/app/actions", () => ({
 
 const { createUser, getMembership } = jest.requireMock("@/graphql/users/logic");
 const { getAuth } = jest.requireMock("@/auth");
+const { error: logError } = jest.requireMock("@/services/logger");
 
 const domain = {
     _id: new mongoose.Types.ObjectId("666666666666666666666666"),
@@ -139,7 +143,7 @@ describe("resolveGuestMembership", () => {
             entityId: "course-1",
             planId: "plan-1",
         });
-        expect(result).toBe(membership);
+        expect(result).toEqual({ membership, protectedExisting: false });
         expect(membership.paymentPlanId).toBe("plan-1");
         expect(membership.sessionId).toBe("session-from-invoice");
         expect(membership.subscriptionId).toBeUndefined();
@@ -235,7 +239,7 @@ describe("resolveGuestMembership", () => {
             invoiceId: "inv-1",
         });
 
-        expect(result).toBe(membership);
+        expect(result).toEqual({ membership, protectedExisting: false });
         expect(createUser).not.toHaveBeenCalled();
         expect(getMembership).not.toHaveBeenCalled();
         expect(InvoiceModel.updateOne).not.toHaveBeenCalled();
@@ -463,5 +467,151 @@ describe("claimGuestSession", () => {
             { domain: domain._id, invoiceId: "inv-1" },
             { $unset: { guestSignInClaimedAt: "" } },
         );
+    });
+});
+
+describe("resolveGuestMembership protections", () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (UserModel.findOne as jest.Mock).mockResolvedValue({
+            userId: "user-9",
+        });
+    });
+
+    const activeMembership = (status: string) => ({
+        ...buildMembership(),
+        status,
+    });
+
+    it.each([
+        Constants.MembershipStatus.ACTIVE,
+        Constants.MembershipStatus.REJECTED,
+    ])(
+        "leaves an existing %s membership untouched, marks the invoice and logs for a refund",
+        async (status) => {
+            const invoice = buildInvoice();
+            const membership = activeMembership(status);
+            (InvoiceModel.findOne as jest.Mock).mockResolvedValue(invoice);
+            getMembership.mockResolvedValue(membership);
+
+            const result = await resolveGuestMembership({
+                domain,
+                invoiceId: "inv-1",
+            });
+
+            expect(result).toEqual({ membership, protectedExisting: true });
+            expect(membership.sessionId).toBe("old-session");
+            expect(membership.subscriptionId).toBe("old-sub");
+            expect(membership.subscriptionMethod).toBe("stripe");
+            expect(membership.save).not.toHaveBeenCalled();
+            expect(InvoiceModel.updateOne).toHaveBeenCalledWith(
+                expect.objectContaining({ guestUserId: { $exists: false } }),
+                {
+                    $set: {
+                        guestUserId: "user-9",
+                        guestAccountCreated: false,
+                    },
+                },
+            );
+            expect(logError).toHaveBeenCalledWith(
+                expect.stringContaining("refund"),
+                expect.objectContaining({
+                    invoiceId: "inv-1",
+                    membershipId: "real-membership",
+                }),
+            );
+        },
+    );
+
+    it("still resets a pending membership", async () => {
+        const membership = activeMembership(Constants.MembershipStatus.PENDING);
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(buildInvoice());
+        getMembership.mockResolvedValue(membership);
+
+        const result = await resolveGuestMembership({
+            domain,
+            invoiceId: "inv-1",
+        });
+
+        expect(result?.protectedExisting).toBe(false);
+        expect(membership.sessionId).toBe("session-from-invoice");
+        expect(logError).not.toHaveBeenCalled();
+    });
+
+    it("finds an existing account whatever the case or spacing of its stored email", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
+            buildInvoice({ guestEmail: "buyer.one+tag@example.com" }),
+        );
+        getMembership.mockResolvedValue(buildMembership());
+
+        await resolveGuestMembership({ domain, invoiceId: "inv-1" });
+
+        const filter = (UserModel.findOne as jest.Mock).mock.calls[0][0];
+        expect(filter.domain).toBe(domain._id);
+        const pattern: RegExp = filter.email;
+        expect(pattern.test("  Buyer.One+Tag@Example.COM ")).toBe(true);
+        expect(pattern.test("buyer.one+tag@example.com")).toBe(true);
+        expect(pattern.test("buyerXone+tag@example.com")).toBe(false);
+        expect(pattern.test("other-buyer.one+tag@example.com")).toBe(false);
+        expect(createUser).not.toHaveBeenCalled();
+    });
+
+    it("flags an account created by the checkout as not yet verified", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(buildInvoice());
+        (UserModel.findOne as jest.Mock).mockResolvedValue(null);
+        createUser.mockResolvedValue({ userId: "user-1" });
+        getMembership.mockResolvedValue(buildMembership());
+
+        await resolveGuestMembership({ domain, invoiceId: "inv-1" });
+
+        expect(UserModel.updateOne).toHaveBeenCalledWith(
+            { domain: domain._id, userId: "user-1" },
+            { $set: { guestUnverified: true } },
+        );
+    });
+
+    it("does not flag accounts that already existed", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(buildInvoice());
+        getMembership.mockResolvedValue(buildMembership());
+
+        await resolveGuestMembership({ domain, invoiceId: "inv-1" });
+
+        expect(UserModel.updateOne).not.toHaveBeenCalled();
+    });
+});
+
+describe("claimGuestSession marks its own sign-in", () => {
+    it("runs the OTP sign-in inside the guest-claim context", async () => {
+        const secret = "s3cret";
+        const hash = createHash("sha256").update(secret).digest("hex");
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
+            buildInvoice({
+                status: Constants.InvoiceStatus.PAID,
+                guestAccountCreated: true,
+                guestClaimTokenHash: hash,
+                guestPaidAt: new Date(),
+            }),
+        );
+        (InvoiceModel.findOneAndUpdate as jest.Mock).mockResolvedValue({});
+        let marker: unknown;
+        getAuth.mockReturnValue({
+            api: {
+                createVerificationOTP: jest.fn().mockResolvedValue("1"),
+                signInEmailOTP: jest.fn().mockImplementation(async () => {
+                    marker = als.getStore()?.get(GUEST_CLAIM_ALS_KEY);
+                    return new Response("{}");
+                }),
+            },
+        });
+
+        await claimGuestSession({
+            domain,
+            invoiceId: "inv-1",
+            headers: new Headers({
+                cookie: `${GUEST_CLAIM_COOKIE}=${secret}`,
+            }),
+        });
+
+        expect(marker).toBe(true);
     });
 });
