@@ -15,7 +15,7 @@ import {
 import { Check, X } from "lucide-react";
 import { LoginForm } from "./login-form";
 import { resolvePlan } from "./resolve-plan";
-import { GuestEmailField, isValidGuestEmail } from "./guest-email-field";
+import { GuestEmailField, guestEmailsMatch } from "./guest-email-field";
 import {
     PaymentPlan,
     Constants,
@@ -112,6 +112,7 @@ export default function Checkout({
     >();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [guestEmail, setGuestEmail] = useState("");
+    const [guestEmailConfirm, setGuestEmailConfirm] = useState("");
     const [preferLogin, setPreferLogin] = useState(false);
 
     const stripePromise = loadStripe(siteinfo.stripeKey as string);
@@ -201,6 +202,9 @@ export default function Checkout({
     const isGuest = !isLoggedIn && guestAllowed && !preferLogin;
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (isGuest && !guestEmailsMatch(guestEmail, guestEmailConfirm)) {
+            return;
+        }
         setIsSubmitting(true);
         const { paymentMethod } = siteinfo;
 
@@ -541,6 +545,10 @@ export default function Checkout({
                                         <GuestEmailField
                                             email={guestEmail}
                                             onChange={setGuestEmail}
+                                            confirmEmail={guestEmailConfirm}
+                                            onConfirmChange={
+                                                setGuestEmailConfirm
+                                            }
                                             onUseLogin={() =>
                                                 setPreferLogin(true)
                                             }
@@ -599,7 +607,10 @@ export default function Checkout({
                                         (!isLoggedIn &&
                                             !(
                                                 isGuest &&
-                                                isValidGuestEmail(guestEmail)
+                                                guestEmailsMatch(
+                                                    guestEmail,
+                                                    guestEmailConfirm,
+                                                )
                                             )) ||
                                         !form.formState.isValid ||
                                         (selectedPlan?.type ===

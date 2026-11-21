@@ -1046,6 +1046,8 @@ export const CHECKOUT_RECAPTCHA_FAILED =
 // Guest checkout (pay with just an email)
 export const CHECKOUT_GUEST_EMAIL_HINT =
     "Te enviaremos aquí tu acceso. No necesitas crear una cuenta antes de pagar.";
+export const CHECKOUT_EMAIL_CONFIRM_PLACEHOLDER = "Repite tu email";
+export const CHECKOUT_EMAIL_MISMATCH = "Los emails no coinciden";
 export const CHECKOUT_GUEST_HAVE_ACCOUNT = "¿Ya tienes cuenta? Inicia sesión";
 export const CHECKOUT_GUEST_BACK = "Comprar solo con mi email";
 export const GUEST_PURCHASE_DONE_TITLE = "¡Compra completada!";
