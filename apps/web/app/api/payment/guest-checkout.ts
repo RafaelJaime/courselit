@@ -1,3 +1,4 @@
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import mongoose from "mongoose";
 import { Constants, Membership } from "@courselit/common-models";
 import type { Domain } from "@models/Domain";
@@ -12,6 +13,54 @@ import { sanitizeEmail } from "@/lib/sanitize-email";
 import constants from "@config/constants";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const GUEST_CLAIM_COOKIE = "courselit_guest_claim";
+const GUEST_CLAIM_MAX_AGE_SECONDS = 24 * 60 * 60;
+const GUEST_CLAIM_WINDOW_MS = 60 * 60 * 1000;
+
+const hashToken = (token: string) =>
+    createHash("sha256").update(token).digest("hex");
+
+/** A secret that ties a guest checkout to the browser that started it. */
+export function createGuestClaim(): { token: string; hash: string } {
+    const token = randomBytes(32).toString("base64url");
+    return { token, hash: hashToken(token) };
+}
+
+export function buildGuestClaimCookie(token: string, secure: boolean) {
+    return [
+        `${GUEST_CLAIM_COOKIE}=${token}`,
+        "HttpOnly",
+        ...(secure ? ["Secure"] : []),
+        "SameSite=Lax",
+        "Path=/api/payment",
+        `Max-Age=${GUEST_CLAIM_MAX_AGE_SECONDS}`,
+    ].join("; ");
+}
+
+function clearGuestClaimCookie() {
+    return `${GUEST_CLAIM_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/payment; Max-Age=0`;
+}
+
+function readGuestClaimToken(headers: Headers): string | null {
+    const cookies = headers.get("cookie") || "";
+    for (const part of cookies.split(";")) {
+        const [name, ...value] = part.trim().split("=");
+        if (name === GUEST_CLAIM_COOKIE) {
+            return value.join("=") || null;
+        }
+    }
+    return null;
+}
+
+function claimMatches(token: string | null, storedHash?: string) {
+    if (!token || !storedHash) {
+        return false;
+    }
+    const given = new Uint8Array(Buffer.from(hashToken(token), "hex"));
+    const stored = new Uint8Array(Buffer.from(storedHash, "hex"));
+    return given.length === stored.length && timingSafeEqual(given, stored);
+}
 
 type DomainWithId = Domain & { _id: mongoose.Types.ObjectId };
 
@@ -56,17 +105,29 @@ export async function resolveGuestMembership({
         });
     }
 
-    const existingUser = await UserModel.findOne({
-        domain: domain._id,
-        email: invoice.guestEmail,
-    });
-    const user =
-        existingUser ||
-        (await createUser({
-            domain: domain as any,
-            email: invoice.guestEmail,
-            lead: constants.leadWebsite,
-        }));
+    const findUser = () =>
+        UserModel.findOne({ domain: domain._id, email: invoice.guestEmail });
+    let existingUser = await findUser();
+    let user = existingUser;
+    if (!user) {
+        try {
+            user = await createUser({
+                domain: domain as any,
+                email: invoice.guestEmail,
+                lead: constants.leadWebsite,
+            });
+        } catch (err: any) {
+            // A concurrent webhook created it first. Whoever it belongs to,
+            // it is not treated as created by this checkout (fail safe).
+            if (err?.code !== 11000) {
+                throw err;
+            }
+            user = existingUser = await findUser();
+            if (!user) {
+                throw err;
+            }
+        }
+    }
 
     const membership = await getMembership({
         domainId: domain._id,
@@ -81,10 +142,21 @@ export async function resolveGuestMembership({
     membership.subscriptionMethod = undefined;
     await membership.save();
 
-    invoice.membershipId = membership.membershipId;
-    invoice.guestUserId = user.userId;
-    invoice.guestAccountCreated = !existingUser;
-    await invoice.save();
+    // Only the first writer decides whether the account was created here.
+    await InvoiceModel.updateOne(
+        {
+            domain: domain._id,
+            invoiceId,
+            guestUserId: { $exists: false },
+        },
+        {
+            $set: {
+                membershipId: membership.membershipId,
+                guestUserId: user.userId,
+                guestAccountCreated: !existingUser,
+            },
+        },
+    );
 
     return membership;
 }
@@ -125,6 +197,20 @@ export async function claimGuestSession({
         return { outcome: "existing-account" };
     }
 
+    // The buyer must come back with the browser that started the checkout,
+    // within an hour of paying. Otherwise the purchase stands, but they sign
+    // in with their email code like any existing account.
+    const paidRecently =
+        !!invoice.guestPaidAt &&
+        Date.now() - new Date(invoice.guestPaidAt).getTime() <=
+            GUEST_CLAIM_WINDOW_MS;
+    if (
+        !paidRecently ||
+        !claimMatches(readGuestClaimToken(headers), invoice.guestClaimTokenHash)
+    ) {
+        return { outcome: "existing-account" };
+    }
+
     const claimed = await InvoiceModel.findOneAndUpdate(
         {
             domain: domain._id,
@@ -132,6 +218,7 @@ export async function claimGuestSession({
             status: Constants.InvoiceStatus.PAID,
             guestAccountCreated: true,
             guestSignInClaimedAt: { $exists: false },
+            guestPaidAt: { $gte: new Date(Date.now() - GUEST_CLAIM_WINDOW_MS) },
         },
         { $set: { guestSignInClaimedAt: new Date() } },
     );
@@ -144,7 +231,10 @@ export async function claimGuestSession({
             invoice.guestEmail,
             headers,
         );
-        return { outcome: "signed-in", setCookies };
+        return {
+            outcome: "signed-in",
+            setCookies: [...setCookies, clearGuestClaimCookie()],
+        };
     } catch (err) {
         await InvoiceModel.updateOne(
             { domain: domain._id, invoiceId },

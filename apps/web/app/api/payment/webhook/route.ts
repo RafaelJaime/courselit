@@ -163,6 +163,9 @@ async function handleInvoice(
         invoice.paymentProcessorTransactionId =
             paymentMethod.getPaymentIdentifier(body);
         invoice.status = Constants.InvoiceStatus.PAID;
+        if (invoice.guestEmail) {
+            invoice.guestPaidAt = new Date();
+        }
         await (invoice as any).save();
     } else {
         await InvoiceModel.create({

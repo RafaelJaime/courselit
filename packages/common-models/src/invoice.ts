@@ -21,6 +21,8 @@ export interface Invoice {
     guestPlanId?: string;
     guestUserId?: string;
     guestAccountCreated?: boolean;
+    guestClaimTokenHash?: string;
+    guestPaidAt?: Date;
     guestSignInClaimedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date;

@@ -35,6 +35,8 @@ const InvoiceSchema = new mongoose.Schema<InternalInvoice>(
         guestPlanId: { type: String },
         guestUserId: { type: String },
         guestAccountCreated: { type: Boolean },
+        guestClaimTokenHash: { type: String },
+        guestPaidAt: { type: Date },
         guestSignInClaimedAt: { type: Date },
     },
     {

@@ -29,6 +29,9 @@ jest.mock("@/auth", () => ({
 }));
 jest.mock("../../helpers");
 jest.mock("../../guest-checkout", () => ({
+    createGuestClaim: () => ({ token: "claim-token", hash: "claim-hash" }),
+    buildGuestClaimCookie: (token: string, secure: boolean) =>
+        `claim=${token}; ${secure ? "Secure" : "Insecure"}`,
     isGuestCheckoutEnabled: (domain: any) =>
         domain.settings?.guestCheckout === true,
     parseGuestEmail: (raw: unknown) =>
@@ -716,9 +719,38 @@ describe("Payment Initiate Route", () => {
                     guestEntityId: "course-123",
                     guestEntityType: Constants.MembershipEntityType.COURSE,
                     guestPlanId: "planA",
+                    guestClaimTokenHash: "claim-hash",
                     status: Constants.InvoiceStatus.PENDING,
                 }),
             );
+        });
+
+        it("binds the checkout to the browser with a claim cookie, never storing the secret", async () => {
+            mockRequest.json = guestBody({
+                email: "buyer@example.com",
+                origin: "https://school.test",
+            });
+
+            const response = await POST(mockRequest);
+
+            expect(response.headers.getSetCookie()).toEqual([
+                "claim=claim-token; Secure",
+            ]);
+            const stored = (Invoice.create as jest.Mock).mock.calls[0][0];
+            expect(JSON.stringify(stored)).not.toContain("claim-token");
+        });
+
+        it("does not mark the cookie Secure on plain http", async () => {
+            mockRequest.json = guestBody({
+                email: "buyer@example.com",
+                origin: "http://localhost:3000",
+            });
+
+            const response = await POST(mockRequest);
+
+            expect(response.headers.getSetCookie()).toEqual([
+                "claim=claim-token; Insecure",
+            ]);
         });
 
         it("ignores a posted email when the visitor is logged in", async () => {
@@ -734,8 +766,9 @@ describe("Payment Initiate Route", () => {
                 save: jest.fn(),
             });
 
-            await POST(mockRequest);
+            const response = await POST(mockRequest);
 
+            expect(response.headers.getSetCookie()).toEqual([]);
             expect(getMembership).toHaveBeenCalled();
             expect(paymentMethod.initiate).toHaveBeenCalledWith(
                 expect.not.objectContaining({

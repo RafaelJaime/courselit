@@ -22,7 +22,12 @@ import { responses } from "@config/strings";
 import mongoose from "mongoose";
 import { activateMembership } from "../helpers";
 import { getMembership } from "@/graphql/users/logic";
-import { isGuestCheckoutEnabled, parseGuestEmail } from "../guest-checkout";
+import {
+    buildGuestClaimCookie,
+    createGuestClaim,
+    isGuestCheckoutEnabled,
+    parseGuestEmail,
+} from "../guest-checkout";
 
 const { transactionSuccess, transactionFailed, transactionInitiated } =
     constants;
@@ -149,6 +154,7 @@ export async function POST(req: NextRequest) {
                 return Response.json({}, { status: 401 });
             }
 
+            const claim = createGuestClaim();
             const invoiceId = generateUniqueId();
             const membershipId = generateUniqueId();
             const membershipSessionId = generateUniqueId();
@@ -177,13 +183,22 @@ export async function POST(req: NextRequest) {
                 guestEntityId: id,
                 guestEntityType: type,
                 guestPlanId: planId,
+                guestClaimTokenHash: claim.hash,
             });
 
-            return Response.json({
+            const response = Response.json({
                 status: transactionInitiated,
                 paymentTracker,
                 metadata,
             });
+            response.headers.append(
+                "set-cookie",
+                buildGuestClaimCookie(
+                    claim.token,
+                    typeof origin === "string" && origin.startsWith("https:"),
+                ),
+            );
+            return response;
         }
 
         const membership = await getMembership({

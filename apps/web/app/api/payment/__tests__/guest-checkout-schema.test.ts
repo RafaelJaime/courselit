@@ -54,6 +54,8 @@ describe("guest checkout persistence", () => {
             guestEntityId: "course-1",
             guestEntityType: Constants.MembershipEntityType.COURSE,
             guestPlanId: "plan-1",
+            guestClaimTokenHash: "abc123",
+            guestPaidAt: new Date(),
         });
 
         const invoice = await InvoiceModel.findOne({
@@ -65,6 +67,8 @@ describe("guest checkout persistence", () => {
             guestEntityId: "course-1",
             guestEntityType: "course",
             guestPlanId: "plan-1",
+            guestClaimTokenHash: "abc123",
+            guestPaidAt: expect.any(Date),
         });
     });
 

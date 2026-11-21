@@ -115,3 +115,54 @@ describe("payment webhook", () => {
         expect(activateMembership).not.toHaveBeenCalled();
     });
 });
+
+describe("payment webhook guest paid timestamp", () => {
+    it("stamps guestPaidAt when a guest invoice is marked paid", async () => {
+        const invoice: any = {
+            status: Constants.InvoiceStatus.PENDING,
+            guestEmail: "buyer@example.com",
+            save: jest.fn(),
+        };
+        (DomainModel.findOne as jest.Mock).mockResolvedValue(domain);
+        (getPaymentMethod as jest.Mock).mockResolvedValue({
+            name: "stripe",
+            verify: jest.fn().mockResolvedValue(true),
+            getMetadata: jest.fn().mockReturnValue({
+                membershipId: "m",
+                invoiceId: "inv-1",
+            }),
+            getPaymentIdentifier: jest.fn().mockReturnValue("cs_1"),
+            getName: jest.fn(),
+        });
+        (MembershipModel.findOne as jest.Mock).mockResolvedValue({
+            paymentPlanId: "plan-1",
+        });
+        (PaymentPlanModel.findOne as jest.Mock).mockResolvedValue(plan);
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(invoice);
+        const request = {
+            json: jest.fn().mockResolvedValue({}),
+            headers: { get: jest.fn().mockReturnValue("school") },
+        } as unknown as NextRequest;
+
+        await POST(request);
+
+        expect(invoice.status).toBe(Constants.InvoiceStatus.PAID);
+        expect(invoice.guestPaidAt).toBeInstanceOf(Date);
+    });
+
+    it("leaves ordinary invoices without a guest timestamp", async () => {
+        const invoice: any = {
+            status: Constants.InvoiceStatus.PENDING,
+            save: jest.fn(),
+        };
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(invoice);
+        const request = {
+            json: jest.fn().mockResolvedValue({}),
+            headers: { get: jest.fn().mockReturnValue("school") },
+        } as unknown as NextRequest;
+
+        await POST(request);
+
+        expect(invoice.guestPaidAt).toBeUndefined();
+    });
+});

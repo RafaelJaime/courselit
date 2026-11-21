@@ -7,8 +7,12 @@ import { Constants } from "@courselit/common-models";
 import InvoiceModel from "@models/Invoice";
 import UserModel from "@models/User";
 import MembershipModel from "@models/Membership";
+import { createHash } from "crypto";
 import {
+    GUEST_CLAIM_COOKIE,
+    buildGuestClaimCookie,
     claimGuestSession,
+    createGuestClaim,
     isGuestCheckoutEnabled,
     parseGuestEmail,
     resolveGuestMembership,
@@ -141,10 +145,20 @@ describe("resolveGuestMembership", () => {
         expect(membership.subscriptionId).toBeUndefined();
         expect(membership.subscriptionMethod).toBeUndefined();
         expect(membership.save).toHaveBeenCalled();
-        expect(invoice.membershipId).toBe("real-membership");
-        expect((invoice as any).guestUserId).toBe("user-1");
-        expect((invoice as any).guestAccountCreated).toBe(true);
-        expect(invoice.save).toHaveBeenCalled();
+        expect(InvoiceModel.updateOne).toHaveBeenCalledWith(
+            {
+                domain: domain._id,
+                invoiceId: "inv-1",
+                guestUserId: { $exists: false },
+            },
+            {
+                $set: {
+                    membershipId: "real-membership",
+                    guestUserId: "user-1",
+                    guestAccountCreated: true,
+                },
+            },
+        );
     });
 
     it("reuses an account that already existed and records that it was not created here", async () => {
@@ -161,8 +175,49 @@ describe("resolveGuestMembership", () => {
         expect(getMembership).toHaveBeenCalledWith(
             expect.objectContaining({ userId: "user-9" }),
         );
-        expect((invoice as any).guestAccountCreated).toBe(false);
-        expect((invoice as any).guestUserId).toBe("user-9");
+        expect(InvoiceModel.updateOne).toHaveBeenCalledWith(
+            expect.objectContaining({ guestUserId: { $exists: false } }),
+            {
+                $set: expect.objectContaining({
+                    guestUserId: "user-9",
+                    guestAccountCreated: false,
+                }),
+            },
+        );
+    });
+
+    it("re-reads the user when a concurrent webhook created it first", async () => {
+        const invoice = buildInvoice();
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(invoice);
+        (UserModel.findOne as jest.Mock)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({ userId: "user-7" });
+        createUser.mockRejectedValue(
+            Object.assign(new Error("dup"), { code: 11000 }),
+        );
+        getMembership.mockResolvedValue(buildMembership());
+
+        await resolveGuestMembership({ domain, invoiceId: "inv-1" });
+
+        expect(getMembership).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: "user-7" }),
+        );
+        expect(InvoiceModel.updateOne).toHaveBeenCalledWith(expect.anything(), {
+            $set: expect.objectContaining({
+                guestUserId: "user-7",
+                guestAccountCreated: false,
+            }),
+        });
+    });
+
+    it("rethrows creation errors that are not duplicates", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(buildInvoice());
+        (UserModel.findOne as jest.Mock).mockResolvedValue(null);
+        createUser.mockRejectedValue(new Error("db down"));
+
+        await expect(
+            resolveGuestMembership({ domain, invoiceId: "inv-1" }),
+        ).rejects.toThrow("db down");
     });
 
     it("is idempotent when the webhook is delivered twice", async () => {
@@ -183,14 +238,51 @@ describe("resolveGuestMembership", () => {
         expect(result).toBe(membership);
         expect(createUser).not.toHaveBeenCalled();
         expect(getMembership).not.toHaveBeenCalled();
-        expect((invoice as any).guestAccountCreated).toBe(true);
+        expect(InvoiceModel.updateOne).not.toHaveBeenCalled();
+    });
+});
+
+describe("guest claim cookie", () => {
+    it("creates a random secret and only its SHA-256 hash is meant to be stored", () => {
+        const a = createGuestClaim();
+        const b = createGuestClaim();
+
+        expect(a.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+        expect(a.token).not.toBe(b.token);
+        expect(a.hash).toBe(createHash("sha256").update(a.token).digest("hex"));
+    });
+
+    it("builds an httpOnly, SameSite=Lax cookie scoped to the payment API", () => {
+        const cookie = buildGuestClaimCookie("tok", true);
+
+        expect(cookie).toContain(`${GUEST_CLAIM_COOKIE}=tok`);
+        expect(cookie).toContain("HttpOnly");
+        expect(cookie).toContain("Secure");
+        expect(cookie).toContain("SameSite=Lax");
+        expect(cookie).toContain("Path=/api/payment");
+        expect(cookie).toContain("Max-Age=86400");
+        expect(buildGuestClaimCookie("tok", false)).not.toContain("Secure");
     });
 });
 
 describe("claimGuestSession", () => {
-    const headers = new Headers({ domain: "school" });
+    const secret = "the-browser-secret";
+    const hash = createHash("sha256").update(secret).digest("hex");
+    const headers = new Headers({
+        domain: "school",
+        cookie: `other=1; ${GUEST_CLAIM_COOKIE}=${secret}`,
+    });
     let createVerificationOTP: jest.Mock;
     let signInEmailOTP: jest.Mock;
+
+    const paidInvoice = (overrides: Record<string, unknown> = {}) =>
+        buildInvoice({
+            status: Constants.InvoiceStatus.PAID,
+            guestAccountCreated: true,
+            guestClaimTokenHash: hash,
+            guestPaidAt: new Date(),
+            ...overrides,
+        });
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -237,27 +329,18 @@ describe("claimGuestSession", () => {
 
     it("never signs in an account that existed before the checkout", async () => {
         (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
-            buildInvoice({
-                status: Constants.InvoiceStatus.PAID,
-                guestAccountCreated: false,
-            }),
+            paidInvoice({ guestAccountCreated: false }),
         );
 
         expect(
             await claimGuestSession({ domain, invoiceId: "inv-1", headers }),
         ).toEqual({ outcome: "existing-account" });
         expect(InvoiceModel.findOneAndUpdate).not.toHaveBeenCalled();
-        expect(createVerificationOTP).not.toHaveBeenCalled();
         expect(signInEmailOTP).not.toHaveBeenCalled();
     });
 
-    it("signs in the account created by the paid checkout, once", async () => {
-        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
-            buildInvoice({
-                status: Constants.InvoiceStatus.PAID,
-                guestAccountCreated: true,
-            }),
-        );
+    it("signs in the account created by the paid checkout, once, and clears the claim cookie", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(paidInvoice());
         (InvoiceModel.findOneAndUpdate as jest.Mock).mockResolvedValue({
             invoiceId: "inv-1",
         });
@@ -274,6 +357,7 @@ describe("claimGuestSession", () => {
                 status: Constants.InvoiceStatus.PAID,
                 guestAccountCreated: true,
                 guestSignInClaimedAt: { $exists: false },
+                guestPaidAt: { $gte: expect.any(Date) },
             }),
             { $set: { guestSignInClaimedAt: expect.any(Date) } },
         );
@@ -288,39 +372,85 @@ describe("claimGuestSession", () => {
                 asResponse: true,
             }),
         );
-        expect(result).toEqual({
-            outcome: "signed-in",
-            setCookies: [
-                "courselit.session_token=abc; Path=/",
-                "courselit.session_data=def; Path=/",
-            ],
-        });
+        expect(result.outcome).toBe("signed-in");
+        const cookies = (result as any).setCookies as string[];
+        expect(cookies.slice(0, 2)).toEqual([
+            "courselit.session_token=abc; Path=/",
+            "courselit.session_data=def; Path=/",
+        ]);
+        expect(cookies[2]).toContain(`${GUEST_CLAIM_COOKIE}=;`);
+        expect(cookies[2]).toContain("Max-Age=0");
+    });
+
+    it.each([
+        ["no cookie", new Headers({ domain: "school" })],
+        [
+            "a cookie from another browser",
+            new Headers({ cookie: `${GUEST_CLAIM_COOKIE}=someone-else` }),
+        ],
+    ])("treats %s like an existing account: no session", async (_n, h) => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(paidInvoice());
+
+        expect(
+            await claimGuestSession({
+                domain,
+                invoiceId: "inv-1",
+                headers: h,
+            }),
+        ).toEqual({ outcome: "existing-account" });
+        expect(InvoiceModel.findOneAndUpdate).not.toHaveBeenCalled();
+        expect(signInEmailOTP).not.toHaveBeenCalled();
+    });
+
+    it("treats an invoice without a stored claim hash as unclaimable", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
+            paidInvoice({ guestClaimTokenHash: undefined }),
+        );
+
+        expect(
+            await claimGuestSession({ domain, invoiceId: "inv-1", headers }),
+        ).toEqual({ outcome: "existing-account" });
+        expect(signInEmailOTP).not.toHaveBeenCalled();
+    });
+
+    it("stops signing in more than one hour after the payment", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
+            paidInvoice({
+                guestPaidAt: new Date(Date.now() - 61 * 60 * 1000),
+            }),
+        );
+
+        expect(
+            await claimGuestSession({ domain, invoiceId: "inv-1", headers }),
+        ).toEqual({ outcome: "existing-account" });
+        expect(InvoiceModel.findOneAndUpdate).not.toHaveBeenCalled();
+        expect(signInEmailOTP).not.toHaveBeenCalled();
+    });
+
+    it("treats an invoice with no paid timestamp as expired", async () => {
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
+            paidInvoice({ guestPaidAt: undefined }),
+        );
+
+        expect(
+            await claimGuestSession({ domain, invoiceId: "inv-1", headers }),
+        ).toEqual({ outcome: "existing-account" });
     });
 
     it("refuses to mint a second session when the return URL is replayed", async () => {
         (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
-            buildInvoice({
-                status: Constants.InvoiceStatus.PAID,
-                guestAccountCreated: true,
-                guestSignInClaimedAt: new Date(),
-            }),
+            paidInvoice({ guestSignInClaimedAt: new Date() }),
         );
         (InvoiceModel.findOneAndUpdate as jest.Mock).mockResolvedValue(null);
 
         expect(
             await claimGuestSession({ domain, invoiceId: "inv-1", headers }),
         ).toEqual({ outcome: "already-claimed" });
-        expect(createVerificationOTP).not.toHaveBeenCalled();
         expect(signInEmailOTP).not.toHaveBeenCalled();
     });
 
     it("releases the claim when the session could not be created", async () => {
-        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(
-            buildInvoice({
-                status: Constants.InvoiceStatus.PAID,
-                guestAccountCreated: true,
-            }),
-        );
+        (InvoiceModel.findOne as jest.Mock).mockResolvedValue(paidInvoice());
         (InvoiceModel.findOneAndUpdate as jest.Mock).mockResolvedValue({
             invoiceId: "inv-1",
         });
