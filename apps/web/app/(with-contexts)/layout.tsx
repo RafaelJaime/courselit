@@ -5,9 +5,9 @@ import { headers } from "next/headers";
 import { getFullSiteSetup } from "@ui-lib/utils";
 import { getAddressFromHeaders } from "@/app/actions";
 import { defaultState } from "@components/default-state";
-import { decode } from "base-64";
-import { ServerConfig, SiteInfo } from "@courselit/common-models";
+import { ServerConfig } from "@courselit/common-models";
 import constants from "@config/constants";
+import { formatSiteInfo } from "./format-site-info";
 
 export default async function Layout({
     children,
@@ -40,29 +40,3 @@ export default async function Layout({
         </LayoutWithContext>
     );
 }
-
-const formatSiteInfo = (siteinfo?: SiteInfo) => ({
-    title: siteinfo?.title || defaultState.siteinfo.title,
-    subtitle: siteinfo?.subtitle || defaultState.siteinfo.subtitle,
-    logo: siteinfo?.logo || defaultState.siteinfo.logo,
-    currencyISOCode:
-        siteinfo?.currencyISOCode || defaultState.siteinfo.currencyISOCode,
-    paymentMethod:
-        siteinfo?.paymentMethod || defaultState.siteinfo.paymentMethod,
-    stripeKey: siteinfo?.stripeKey || defaultState.siteinfo.stripeKey,
-    codeInjectionHead: siteinfo?.codeInjectionHead
-        ? decode(siteinfo.codeInjectionHead)
-        : defaultState.siteinfo.codeInjectionHead,
-    codeInjectionBody: siteinfo?.codeInjectionBody
-        ? decode(siteinfo.codeInjectionBody)
-        : defaultState.siteinfo.codeInjectionBody,
-    mailingAddress:
-        siteinfo?.mailingAddress || defaultState.siteinfo.mailingAddress,
-    hideCourseLitBranding:
-        siteinfo?.hideCourseLitBranding ||
-        defaultState.siteinfo.hideCourseLitBranding,
-    razorpayKey: siteinfo?.razorpayKey || defaultState.siteinfo.razorpayKey,
-    lemonsqueezyKey:
-        siteinfo?.lemonsqueezyKey || defaultState.siteinfo.lemonsqueezyKey,
-    logins: siteinfo?.logins || defaultState.siteinfo.logins,
-});
