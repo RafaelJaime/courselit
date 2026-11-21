@@ -40,7 +40,13 @@ export default class StripePayment implements Payment {
         return this;
     }
 
-    async initiate({ metadata, paymentPlan, product, origin }: InitiateProps) {
+    async initiate({
+        metadata,
+        paymentPlan,
+        product,
+        origin,
+        customerEmail,
+    }: InitiateProps) {
         const unit_amount = getUnitAmount(paymentPlan) * 100;
         const sessionPayload: any = {
             payment_method_types: ["card"],
@@ -67,6 +73,9 @@ export default class StripePayment implements Payment {
             metadata,
             allow_promotion_codes: true,
         };
+        if (customerEmail) {
+            sessionPayload.customer_email = customerEmail;
+        }
         const session =
             await this.stripe.checkout.sessions.create(sessionPayload);
 

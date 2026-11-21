@@ -9,6 +9,8 @@ export interface InitiateProps {
         type: MembershipEntityType;
     };
     origin: string;
+    /** Prefilled on the provider's checkout page (guest checkout). */
+    customerEmail?: string;
 }
 
 interface Metadata {

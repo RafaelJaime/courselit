@@ -1,4 +1,5 @@
 import { Constants } from ".";
+import { MembershipEntityType } from "./membership";
 
 const { InvoiceStatus } = Constants;
 
@@ -14,6 +15,13 @@ export interface Invoice {
     paymentProcessorTransactionId?: string;
     paymentProcessorEntityId?: string;
     currencyISOCode: string;
+    guestEmail?: string;
+    guestEntityId?: string;
+    guestEntityType?: MembershipEntityType;
+    guestPlanId?: string;
+    guestUserId?: string;
+    guestAccountCreated?: boolean;
+    guestSignInClaimedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date;
 }

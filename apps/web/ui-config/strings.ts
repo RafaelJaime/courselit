@@ -1042,3 +1042,23 @@ export const CHECKOUT_RECAPTCHA_UNAVAILABLE =
     "El servicio reCAPTCHA no está disponible. Inténtalo de nuevo más tarde.";
 export const CHECKOUT_RECAPTCHA_FAILED =
     "No se pudo validar reCAPTCHA. Inténtalo de nuevo.";
+
+// Guest checkout (pay with just an email)
+export const CHECKOUT_GUEST_EMAIL_HINT =
+    "Te enviaremos aquí tu acceso. No necesitas crear una cuenta antes de pagar.";
+export const CHECKOUT_GUEST_HAVE_ACCOUNT = "¿Ya tienes cuenta? Inicia sesión";
+export const CHECKOUT_GUEST_BACK = "Comprar solo con mi email";
+export const GUEST_PURCHASE_DONE_TITLE = "¡Compra completada!";
+export const GUEST_SIGNED_IN_TEXT = "Ya has iniciado sesión con tu email.";
+export const GUEST_EXISTING_ACCOUNT_TEXT =
+    "Ya tenías una cuenta con este email. Inicia sesión con el código que te enviaremos por correo para acceder a tu compra.";
+export const GUEST_LOGIN_LINK = "Iniciar sesión";
+export const GUEST_GO_TO_CONTENT = "Ir a mi contenido";
+export const GUEST_PHONE_HEADING = "¿Quieres dejarnos tu móvil?";
+export const GUEST_PHONE_DESCRIPTION =
+    "Es opcional. Así podemos contactarte si hace falta.";
+export const GUEST_PHONE_PLACEHOLDER = "Tu móvil, con prefijo (+34)";
+export const GUEST_PHONE_SAVE = "Guardar";
+export const GUEST_PHONE_SKIP = "Omitir";
+export const GUEST_PHONE_INVALID = "Escribe un teléfono válido";
+export const GUEST_PHONE_SAVED = "Móvil guardado";

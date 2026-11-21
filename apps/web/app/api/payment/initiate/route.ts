@@ -8,6 +8,7 @@ import {
     Course,
     MembershipEntityType,
     PaymentPlan,
+    UIConstants,
 } from "@courselit/common-models";
 import CommunityModel from "@models/Community";
 import CourseModel from "@models/Course";
@@ -21,6 +22,7 @@ import { responses } from "@config/strings";
 import mongoose from "mongoose";
 import { activateMembership } from "../helpers";
 import { getMembership } from "@/graphql/users/logic";
+import { isGuestCheckoutEnabled, parseGuestEmail } from "../guest-checkout";
 
 const { transactionSuccess, transactionFailed, transactionInitiated } =
     constants;
@@ -31,6 +33,8 @@ export interface PaymentInitiateRequest {
     planId: string;
     origin: string;
     joiningReason?: string;
+    /** Only read when there is no session and the domain allows guest checkout. */
+    email?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -51,8 +55,18 @@ export async function POST(req: NextRequest) {
         });
         const user = await getUser(session, domain._id);
 
+        let guestEmail: string | null = null;
         if (!user) {
-            return Response.json({}, { status: 401 });
+            if (!isGuestCheckoutEnabled(domain)) {
+                return Response.json({}, { status: 401 });
+            }
+            guestEmail = parseGuestEmail(body.email);
+            if (!guestEmail) {
+                return Response.json(
+                    { message: "A valid email is required" },
+                    { status: 400 },
+                );
+            }
         }
 
         const { id, type, planId, origin, joiningReason } = body;
@@ -109,9 +123,72 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const product = {
+            id,
+            title:
+                type === Constants.MembershipEntityType.COMMUNITY
+                    ? (entity as Community)!.name
+                    : (entity as Course)!.title,
+            type,
+        };
+        const amount =
+            paymentPlan.oneTimeAmount ||
+            paymentPlan.subscriptionMonthlyAmount ||
+            paymentPlan.subscriptionYearlyAmount ||
+            paymentPlan.emiAmount ||
+            0;
+
+        if (guestEmail) {
+            // A guest has no account yet: it is created, together with the
+            // membership, when the payment provider confirms the payment.
+            if (
+                paymentPlan.type === Constants.PaymentPlanType.FREE ||
+                !paymentMethod ||
+                paymentMethod.name !== UIConstants.PAYMENT_METHOD_STRIPE
+            ) {
+                return Response.json({}, { status: 401 });
+            }
+
+            const invoiceId = generateUniqueId();
+            const membershipId = generateUniqueId();
+            const membershipSessionId = generateUniqueId();
+            const currencyISOCode = await paymentMethod.getCurrencyISOCode();
+            const metadata = { membershipId, invoiceId, currencyISOCode };
+
+            const paymentTracker = await paymentMethod.initiate({
+                metadata,
+                paymentPlan,
+                product,
+                origin,
+                customerEmail: guestEmail,
+            });
+
+            await InvoiceModel.create({
+                domain: domain._id,
+                invoiceId,
+                membershipId,
+                membershipSessionId,
+                amount,
+                status: Constants.InvoiceStatus.PENDING,
+                paymentProcessor: paymentMethod.name,
+                paymentProcessorEntityId: paymentTracker,
+                currencyISOCode,
+                guestEmail,
+                guestEntityId: id,
+                guestEntityType: type,
+                guestPlanId: planId,
+            });
+
+            return Response.json({
+                status: transactionInitiated,
+                paymentTracker,
+                metadata,
+            });
+        }
+
         const membership = await getMembership({
             domainId: domain._id,
-            userId: user.userId,
+            userId: user!.userId,
             entityType: type,
             entityId: id,
             planId,
@@ -184,14 +261,7 @@ export async function POST(req: NextRequest) {
         const paymentTracker = await paymentMethod!.initiate({
             metadata,
             paymentPlan,
-            product: {
-                id: id,
-                title:
-                    type === Constants.MembershipEntityType.COMMUNITY
-                        ? (entity as Community)!.name
-                        : (entity as Course)!.title,
-                type,
-            },
+            product,
             origin,
         });
 
@@ -200,12 +270,7 @@ export async function POST(req: NextRequest) {
             invoiceId,
             membershipId: membership.membershipId,
             membershipSessionId: membership.sessionId,
-            amount:
-                paymentPlan.oneTimeAmount ||
-                paymentPlan.subscriptionMonthlyAmount ||
-                paymentPlan.subscriptionYearlyAmount ||
-                paymentPlan.emiAmount ||
-                0,
+            amount,
             status: Constants.InvoiceStatus.PENDING,
             paymentProcessor: paymentMethod!.name,
             paymentProcessorEntityId: paymentTracker,

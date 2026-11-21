@@ -14,6 +14,7 @@ import { error } from "@/services/logger";
 import mongoose from "mongoose";
 import Payment from "@/payments-new/payment";
 import { activateMembership } from "../helpers";
+import { resolveGuestMembership } from "../guest-checkout";
 
 export async function POST(req: NextRequest) {
     try {
@@ -40,7 +41,14 @@ export async function POST(req: NextRequest) {
         const metadata = paymentMethod.getMetadata(body);
         const { membershipId, invoiceId, currencyISOCode } = metadata;
 
-        const membership = await getMembership(domain._id, membershipId);
+        // A guest checkout has no membership until the payment is confirmed:
+        // its account and membership are created here.
+        const membership =
+            (await getMembership(domain._id, membershipId)) ||
+            ((await resolveGuestMembership({
+                domain,
+                invoiceId,
+            })) as Membership | null);
         if (!membership) {
             return Response.json({ message: "Membership not found" });
         }

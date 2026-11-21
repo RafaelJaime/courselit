@@ -27,6 +27,15 @@ const InvoiceSchema = new mongoose.Schema<InternalInvoice>(
         paymentProcessorEntityId: { type: String },
         paymentProcessorTransactionId: { type: String },
         currencyISOCode: { type: String, required: true },
+        // Guest checkout: the buyer paid without an account. The user and the
+        // membership are created when the payment is confirmed.
+        guestEmail: { type: String },
+        guestEntityId: { type: String },
+        guestEntityType: { type: String },
+        guestPlanId: { type: String },
+        guestUserId: { type: String },
+        guestAccountCreated: { type: Boolean },
+        guestSignInClaimedAt: { type: Date },
     },
     {
         timestamps: true,

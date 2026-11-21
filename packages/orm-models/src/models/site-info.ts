@@ -27,4 +27,5 @@ export const SettingsSchema = new mongoose.Schema<SiteInfo>({
     lemonsqueezySubscriptionYearlyVariantId: { type: String },
     logins: { type: [String], enum: Object.values(Constants.LoginProvider) },
     ssoTrustedDomain: { type: String },
+    guestCheckout: { type: Boolean, default: false },
 });

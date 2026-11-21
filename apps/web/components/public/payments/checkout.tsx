@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Check, X } from "lucide-react";
 import { LoginForm } from "./login-form";
+import { GuestEmailField, isValidGuestEmail } from "./guest-email-field";
 import {
     PaymentPlan,
     Constants,
@@ -43,6 +44,7 @@ import {
     CHECKOUT_ALREADY_OWNED_HEADING,
     CHECKOUT_ALREADY_OWNED_TEXT,
     CHECKOUT_EMAIL_LABEL,
+    CHECKOUT_GUEST_BACK,
     CHECKOUT_GO_TO_RESOURCE,
     CHECKOUT_JOINING_REASON_LABEL,
     CHECKOUT_JOINING_REASON_PLACEHOLDER,
@@ -106,6 +108,8 @@ export default function Checkout({
         MembershipStatus | undefined
     >();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [guestEmail, setGuestEmail] = useState("");
+    const [preferLogin, setPreferLogin] = useState(false);
 
     const stripePromise = loadStripe(siteinfo.stripeKey as string);
     const router = useRouter();
@@ -188,6 +192,15 @@ export default function Checkout({
         initializeSelectedPlanWithDefaultPaymentPlan();
     }, [paymentPlans, product.defaultPaymentPlanId, form]);
 
+    // Guest checkout: pay with only an email; the account is created once the
+    // payment is confirmed. Only for paid plans and Stripe.
+    const guestAllowed =
+        siteinfo.guestCheckout === true &&
+        siteinfo.paymentMethod === UIConstants.PAYMENT_METHOD_STRIPE &&
+        !!selectedPlan &&
+        selectedPlan.type !== paymentPlanType.FREE;
+    const isGuest = !isLoggedIn && guestAllowed && !preferLogin;
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
         const { paymentMethod } = siteinfo;
@@ -199,6 +212,9 @@ export default function Checkout({
             planId: selectedPlan!.planId,
             origin: address.frontend,
         };
+        if (isGuest) {
+            payload.email = guestEmail.trim();
+        }
 
         const fetch = new FetchBuilder()
             .setUrl(`${address.backend}/api/payment/initiate`)
@@ -522,15 +538,37 @@ export default function Checkout({
                                     <Header3 theme={theme.theme}>
                                         {CHECKOUT_PERSONAL_INFORMATION_LABEL}
                                     </Header3>
-                                    {!isLoggedIn ? (
-                                        <LoginForm
-                                            onLoginComplete={
-                                                handleLoginComplete
+                                    {isGuest ? (
+                                        <GuestEmailField
+                                            email={guestEmail}
+                                            onChange={setGuestEmail}
+                                            onUseLogin={() =>
+                                                setPreferLogin(true)
                                             }
-                                            loginProviders={loginProviders}
-                                            type={type}
-                                            id={id}
                                         />
+                                    ) : !isLoggedIn ? (
+                                        <>
+                                            <LoginForm
+                                                onLoginComplete={
+                                                    handleLoginComplete
+                                                }
+                                                loginProviders={loginProviders}
+                                                type={type}
+                                                id={id}
+                                            />
+                                            {guestAllowed && (
+                                                <Button
+                                                    type="button"
+                                                    variant="link"
+                                                    theme={theme.theme}
+                                                    onClick={() =>
+                                                        setPreferLogin(false)
+                                                    }
+                                                >
+                                                    {CHECKOUT_GUEST_BACK}
+                                                </Button>
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="text-sm space-y-2">
                                             <Text1 theme={theme.theme}>
@@ -553,13 +591,17 @@ export default function Checkout({
                                     form="checkout-form"
                                     className="w-full rounded-full"
                                     aria-describedby={
-                                        isLoggedIn
+                                        isLoggedIn || isGuest
                                             ? undefined
                                             : "checkout-submit-hint"
                                     }
                                     disabled={
                                         isSubmitting ||
-                                        !isLoggedIn ||
+                                        (!isLoggedIn &&
+                                            !(
+                                                isGuest &&
+                                                isValidGuestEmail(guestEmail)
+                                            )) ||
                                         !form.formState.isValid ||
                                         (selectedPlan?.type ===
                                             paymentPlanType.FREE &&
@@ -574,7 +616,7 @@ export default function Checkout({
                                         ? CHECKOUT_SUBMITTING
                                         : CHECKOUT_SUBMIT_BUTTON}
                                 </Button>
-                                {!isLoggedIn && (
+                                {!isLoggedIn && !isGuest && (
                                     <p
                                         id="checkout-submit-hint"
                                         className="-mt-4 text-center text-sm text-muted-foreground"

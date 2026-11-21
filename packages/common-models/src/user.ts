@@ -9,6 +9,7 @@ export default interface User {
     name?: string;
     purchases: Progress[];
     bio?: string;
+    phone?: string;
     permissions: string[];
     createdAt: Date;
     updatedAt: Date;

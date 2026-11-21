@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { error } from "@/services/logger";
 import InvoiceModel from "@models/Invoice";
 import Membership from "@models/Membership";
+import { claimGuestSession } from "../guest-checkout";
 
 interface RequestPayload {
     id: string;
@@ -27,11 +28,17 @@ export async function POST(req: NextRequest) {
         });
         const user = await getUser(session, domain._id);
 
-        if (!user) {
-            return Response.json({}, { status: 401 });
-        }
-
         const { id } = body;
+
+        if (!user) {
+            if (!id) {
+                return Response.json(
+                    { message: "Bad request" },
+                    { status: 400 },
+                );
+            }
+            return await verifyGuestPayment(domain, id, req.headers);
+        }
 
         if (!id) {
             return Response.json({ message: "Bad request" }, { status: 400 });
@@ -63,4 +70,34 @@ export async function POST(req: NextRequest) {
         });
         return Response.json({ message: err.message }, { status: 500 });
     }
+}
+
+async function verifyGuestPayment(
+    domain: Awaited<ReturnType<typeof getDomain>> & {},
+    invoiceId: string,
+    headers: Headers,
+) {
+    const result = await claimGuestSession({
+        domain,
+        invoiceId,
+        headers,
+    });
+
+    if (result.outcome === "not-guest") {
+        return Response.json({}, { status: 401 });
+    }
+    if (result.outcome === "pending") {
+        return Response.json({ status: "pending" });
+    }
+
+    const response = Response.json({
+        status: "paid",
+        guest: result.outcome,
+    });
+    if (result.outcome === "signed-in") {
+        for (const cookie of result.setCookies) {
+            response.headers.append("set-cookie", cookie);
+        }
+    }
+    return response;
 }

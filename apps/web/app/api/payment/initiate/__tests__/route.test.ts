@@ -28,6 +28,14 @@ jest.mock("@/auth", () => ({
     },
 }));
 jest.mock("../../helpers");
+jest.mock("../../guest-checkout", () => ({
+    isGuestCheckoutEnabled: (domain: any) =>
+        domain.settings?.guestCheckout === true,
+    parseGuestEmail: (raw: unknown) =>
+        typeof raw === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim())
+            ? raw.trim().toLowerCase()
+            : null,
+}));
 jest.mock("@/graphql/users/logic");
 jest.mock("@/payments-new");
 
@@ -607,6 +615,136 @@ describe("Payment Initiate Route", () => {
 
             const response = await POST(mockRequest);
             expect(response.status).toBe(200);
+        });
+    });
+
+    describe("Guest checkout", () => {
+        const paidPlan = {
+            planId: "planA",
+            type: Constants.PaymentPlanType.ONE_TIME,
+            oneTimeAmount: 100,
+            entityId: "course-123",
+            entityType: Constants.MembershipEntityType.COURSE,
+            archived: false,
+            internal: false,
+        };
+        let paymentMethod: any;
+
+        const guestBody = (extra: Record<string, unknown> = {}) =>
+            jest.fn().mockResolvedValue({
+                id: "course-123",
+                type: Constants.MembershipEntityType.COURSE,
+                planId: "planA",
+                origin: "https://test.com",
+                ...extra,
+            });
+
+        beforeEach(() => {
+            (auth.api.getSession as unknown as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (Domain.findOne as jest.Mock).mockResolvedValue({
+                _id: new mongoose.Types.ObjectId("666666666666666666666666"),
+                settings: { guestCheckout: true },
+            });
+            (PaymentPlan.findOne as jest.Mock).mockResolvedValue(paidPlan);
+            paymentMethod = {
+                name: "stripe",
+                initiate: jest.fn().mockResolvedValue("tracker-1"),
+                getCurrencyISOCode: jest.fn().mockResolvedValue("EUR"),
+                validateSubscription: jest.fn(),
+            };
+            const { getPaymentMethodFromSettings } = require("@/payments-new");
+            (getPaymentMethodFromSettings as jest.Mock).mockResolvedValue(
+                paymentMethod,
+            );
+        });
+
+        it("still returns 401 when the setting is off", async () => {
+            (Domain.findOne as jest.Mock).mockResolvedValue({
+                _id: new mongoose.Types.ObjectId("666666666666666666666666"),
+                settings: {},
+            });
+            mockRequest.json = guestBody({ email: "buyer@example.com" });
+
+            const response = await POST(mockRequest);
+
+            expect(response.status).toBe(401);
+            expect(paymentMethod.initiate).not.toHaveBeenCalled();
+        });
+
+        it("returns 400 when the guest email is missing or invalid", async () => {
+            mockRequest.json = guestBody({ email: "not-an-email" });
+            expect((await POST(mockRequest)).status).toBe(400);
+
+            mockRequest.json = guestBody();
+            expect((await POST(mockRequest)).status).toBe(400);
+            expect(paymentMethod.initiate).not.toHaveBeenCalled();
+        });
+
+        it("keeps free plans behind the login", async () => {
+            (PaymentPlan.findOne as jest.Mock).mockResolvedValue({
+                ...paidPlan,
+                type: Constants.PaymentPlanType.FREE,
+            });
+            mockRequest.json = guestBody({ email: "buyer@example.com" });
+
+            const response = await POST(mockRequest);
+
+            expect(response.status).toBe(401);
+        });
+
+        it("initiates the payment with the email and creates no user or membership", async () => {
+            mockRequest.json = guestBody({ email: " Buyer@Example.com " });
+            const { getMembership } = require("@/graphql/users/logic");
+
+            const response = await POST(mockRequest);
+            const data = await response.json();
+
+            expect(data.status).toBe("initiated");
+            expect(data.paymentTracker).toBe("tracker-1");
+            expect(getMembership).not.toHaveBeenCalled();
+            expect(paymentMethod.initiate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    customerEmail: "buyer@example.com",
+                }),
+            );
+            expect(Invoice.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    membershipId: data.metadata.membershipId,
+                    guestEmail: "buyer@example.com",
+                    guestEntityId: "course-123",
+                    guestEntityType: Constants.MembershipEntityType.COURSE,
+                    guestPlanId: "planA",
+                    status: Constants.InvoiceStatus.PENDING,
+                }),
+            );
+        });
+
+        it("ignores a posted email when the visitor is logged in", async () => {
+            (auth.api.getSession as unknown as jest.Mock).mockResolvedValue({
+                user: { email: "test@test.com" },
+            });
+            mockRequest.json = guestBody({ email: "other@example.com" });
+            const { getMembership } = require("@/graphql/users/logic");
+            (getMembership as jest.Mock).mockResolvedValue({
+                membershipId: "membership-123",
+                userId: "tester",
+                status: Constants.MembershipStatus.PENDING,
+                save: jest.fn(),
+            });
+
+            await POST(mockRequest);
+
+            expect(getMembership).toHaveBeenCalled();
+            expect(paymentMethod.initiate).toHaveBeenCalledWith(
+                expect.not.objectContaining({
+                    customerEmail: expect.anything(),
+                }),
+            );
+            expect(Invoice.create).toHaveBeenCalledWith(
+                expect.not.objectContaining({ guestEmail: expect.anything() }),
+            );
         });
     });
 });

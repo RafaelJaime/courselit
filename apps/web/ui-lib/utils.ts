@@ -161,6 +161,7 @@ export const getSiteInfo = cache(
                     lemonsqueezySubscriptionMonthlyVariantId,
                     lemonsqueezySubscriptionYearlyVariantId,
                     logins,
+                    guestCheckout,
                 },
             }
         }

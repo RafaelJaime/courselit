@@ -28,4 +28,5 @@ export default interface SiteInfo {
     lemonsqueezyWebhookSecret?: string;
     logins?: LoginProvider[];
     ssoTrustedDomain?: string;
+    guestCheckout?: boolean;
 }
