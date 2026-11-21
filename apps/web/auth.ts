@@ -6,8 +6,9 @@ import { InternalUser } from "@courselit/orm-models";
 import { generateUniqueId, getEmailFrom } from "@courselit/utils";
 import { addMailJob } from "@/services/queue";
 import pug from "pug";
-import MagicCodeEmailTemplate from "@/templates/magic-code-email";
-import { responses } from "@/config/strings";
+import MagicCodeEmailTemplate, {
+    magicCodeSubject,
+} from "@/templates/magic-code-email";
 import { mongodbAdapter } from "@/ba-multitenant-adapter";
 import { getBackendAddress } from "./app/actions";
 import { sso } from "@better-auth/sso";
@@ -190,8 +191,13 @@ const createAuthConfig = (baseURL = ""): any => ({
             overrideDefaultEmailVerification: true,
             storeOTP: "hashed",
             async sendVerificationOTP({ email, otp, type }, ctx) {
+                const siteName =
+                    ctx!.headers?.get("domaintitle") ||
+                    ctx!.headers?.get("domain") ||
+                    "";
                 const emailBody = pug.render(MagicCodeEmailTemplate, {
                     code: otp,
+                    siteName,
                     hideCourseLitBranding: ctx!.headers?.get(
                         "hidecourselitbranding",
                     )
@@ -201,13 +207,10 @@ const createAuthConfig = (baseURL = ""): any => ({
 
                 await addMailJob({
                     to: [email],
-                    subject: `${responses.sign_in_mail_prefix} ${ctx!.headers?.get("host")}`,
+                    subject: magicCodeSubject(otp, siteName),
                     body: emailBody,
                     from: getEmailFrom({
-                        name:
-                            ctx!.headers?.get("domaintitle") ||
-                            ctx!.headers?.get("domain") ||
-                            "",
+                        name: siteName,
                         email: process.env.EMAIL_FROM || "",
                     }),
                 });
