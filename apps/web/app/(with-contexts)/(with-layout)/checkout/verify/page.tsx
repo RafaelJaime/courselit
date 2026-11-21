@@ -15,8 +15,13 @@ import {
     GUEST_LOGIN_LINK,
     GUEST_PURCHASE_DONE_TITLE,
     GUEST_SIGNED_IN_TEXT,
+    VERIFY_GO_TO_CONTENT,
+    VERIFY_ORDER_NUMBER,
+    VERIFY_PAID_TITLE,
+    VERIFY_PENDING_TITLE,
 } from "@ui-config/strings";
 import { GuestPhoneForm } from "./guest-phone-form";
+import { WhatsAppBlock } from "./whatsapp-block";
 
 type GuestOutcome = "signed-in" | "existing-account" | "already-claimed";
 
@@ -117,30 +122,22 @@ export default function Page() {
                 </>
             ) : paymentStatus === "paid" ? (
                 <>
-                    {/* <CheckCircle className="w-16 h-16 text-green-500" /> */}
-                    <h2 className="text-2xl font-bold">
-                        Thank you for your purchase!
-                    </h2>
-                    <p className="text-muted-foreground">
-                        Your order number is:{" "}
-                        <span className="font-medium">{id}</span>
-                    </p>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
-                    <p className="text-lg font-medium text-green-600">
-                        Payment verified successfully!
-                    </p>
-                    <p className="text-muted-foreground">
-                        We have sent a confirmation email with order details and
-                        tracking information.
-                    </p>
+                    <CheckCircle className="w-12 h-12 text-green-500" />
+                    <h2 className="text-2xl font-bold">{VERIFY_PAID_TITLE}</h2>
+                    <Button asChild>
+                        <Link href="/dashboard/my-content">
+                            {VERIFY_GO_TO_CONTENT}
+                        </Link>
+                    </Button>
+                    <WhatsAppBlock />
                 </>
             ) : (
                 <>
                     <h2 className="text-2xl font-bold">
-                        Thank you for your order!
+                        {VERIFY_PENDING_TITLE}
                     </h2>
                     <p className="text-muted-foreground">
-                        Your order number is:{" "}
+                        {VERIFY_ORDER_NUMBER}{" "}
                         <span className="font-medium">{id}</span>
                     </p>
                     <PaymentVerificationStatus
@@ -150,19 +147,6 @@ export default function Page() {
                     />
                 </>
             )}
-
-            <div className="flex space-x-4 mt-6">
-                {paymentStatus === "paid" && (
-                    <Button asChild>
-                        <Link href="/dashboard/my-content">
-                            Go to Dashboard
-                        </Link>
-                    </Button>
-                )}
-                {/* <Button variant="outline" asChild>
-          <Link href="/support">Need Help?</Link>
-        </Button> */}
-            </div>
         </div>
     );
 }

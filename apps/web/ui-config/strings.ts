@@ -1062,3 +1062,20 @@ export const GUEST_PHONE_SAVE = "Guardar";
 export const GUEST_PHONE_SKIP = "Omitir";
 export const GUEST_PHONE_INVALID = "Escribe un teléfono válido";
 export const GUEST_PHONE_SAVED = "Móvil guardado";
+
+// Post-payment verify screen
+export const VERIFY_PAID_TITLE =
+    "¡Pago completado! Ya eres parte de fit-leads membresía";
+export const VERIFY_GO_TO_CONTENT = "Ir a mi contenido";
+export const VERIFY_WHATSAPP_TEXT =
+    "Únete a nuestro WhatsApp para recibir los avisos de las clases en directo";
+export const VERIFY_WHATSAPP_JOIN = "Unirme por WhatsApp";
+export const VERIFY_WHATSAPP_CONSENT_LINK =
+    "Gestionar mis permisos de WhatsApp";
+export const VERIFY_PENDING_TITLE = "¡Gracias por tu compra!";
+export const VERIFY_ORDER_NUMBER = "Tu número de pedido es:";
+export const VERIFY_CHECK_AGAIN = "Comprobar el estado otra vez";
+export const VERIFY_NOT_RECEIVED = "Todavía no hemos recibido el pago";
+export const VERIFY_VERIFYING = "Verificando el pago...";
+export const VERIFY_MAY_TAKE_A_MOMENT = "Esto puede tardar unos instantes";
+export const VERIFY_FAILED = "No se ha podido verificar el pago";
