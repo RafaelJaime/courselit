@@ -69,7 +69,7 @@ export default class StripePayment implements Payment {
                     ? "subscription"
                     : "payment",
             success_url: `${origin}/checkout/verify?id=${metadata.invoiceId}`,
-            cancel_url: `${origin}/checkout?type=${product.type}&id=${product.id}`,
+            cancel_url: `${origin}/checkout?type=${product.type}&id=${product.id}&plan=${paymentPlan.planId}`,
             metadata,
             allow_promotion_codes: true,
         };

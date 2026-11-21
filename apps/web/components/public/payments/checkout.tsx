@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Check, X } from "lucide-react";
 import { LoginForm } from "./login-form";
+import { resolvePlan } from "./resolve-plan";
 import { GuestEmailField, isValidGuestEmail } from "./guest-email-field";
 import {
     PaymentPlan,
@@ -78,6 +79,7 @@ export interface CheckoutScreenProps {
     loginProviders?: RuntimeLoginProvider[];
     type?: MembershipEntityType;
     id?: string;
+    preselectedPlan?: string | null;
 }
 
 const formSchema = z.object({
@@ -92,6 +94,7 @@ export default function Checkout({
     loginProviders = [],
     type,
     id,
+    preselectedPlan,
 }: CheckoutScreenProps) {
     const siteinfo = useContext(SiteInfoContext);
     const { profile } = useContext(ProfileContext);
@@ -167,15 +170,11 @@ export default function Checkout({
     useEffect(() => {
         const initializeSelectedPlanWithDefaultPaymentPlan = () => {
             if (paymentPlans.length > 0) {
-                let planToSelect: PaymentPlan | null = null;
-
-                if (product.defaultPaymentPlanId) {
-                    planToSelect =
-                        paymentPlans.find(
-                            (plan) =>
-                                plan.planId === product.defaultPaymentPlanId,
-                        ) || null;
-                }
+                let planToSelect: PaymentPlan | null = resolvePlan(
+                    paymentPlans,
+                    preselectedPlan,
+                    product.defaultPaymentPlanId,
+                );
 
                 if (!planToSelect && paymentPlans.length === 1) {
                     planToSelect = paymentPlans[0];
@@ -190,7 +189,7 @@ export default function Checkout({
         };
 
         initializeSelectedPlanWithDefaultPaymentPlan();
-    }, [paymentPlans, product.defaultPaymentPlanId, form]);
+    }, [paymentPlans, product.defaultPaymentPlanId, preselectedPlan, form]);
 
     // Guest checkout: pay with only an email; the account is created once the
     // payment is confirmed. Only for paid plans and Stripe.

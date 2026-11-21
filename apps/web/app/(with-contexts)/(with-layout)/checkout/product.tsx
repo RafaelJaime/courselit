@@ -21,6 +21,7 @@ export default function ProductCheckout() {
     const searchParams = useSearchParams();
     const entityId = searchParams?.get("id");
     const entityType = searchParams?.get("type");
+    const preselectedPlan = searchParams?.get("plan");
     const { toast } = useToast();
 
     const [product, setProduct] = useState<Product | null>(null);
@@ -241,6 +242,7 @@ export default function ProductCheckout() {
                 loginProviders={loginProviders}
                 type={entityType as MembershipEntityType | undefined}
                 id={entityId as string | undefined}
+                preselectedPlan={preselectedPlan}
             />
         </>
     );

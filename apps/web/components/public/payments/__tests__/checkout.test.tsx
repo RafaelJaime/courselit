@@ -52,8 +52,22 @@ jest.mock("../order-summary", () => ({
 }));
 
 jest.mock("../payment-plan-card", () => ({
-    PaymentPlanCard: ({ plan }: { plan: { name: string } }) => (
-        <div data-testid="plan-card">{plan.name}</div>
+    PaymentPlanCard: ({
+        plan,
+        isSelected,
+        isRecommended,
+    }: {
+        plan: { name: string };
+        isSelected: boolean;
+        isRecommended: boolean;
+    }) => (
+        <div
+            data-testid="plan-card"
+            data-selected={String(isSelected)}
+            data-recommended={String(isRecommended)}
+        >
+            {plan.name}
+        </div>
     ),
 }));
 
@@ -108,6 +122,63 @@ function renderCheckout(type: Product["type"]) {
         />,
     );
 }
+
+describe("Checkout plan preselection", () => {
+    const twoPlans = [
+        {
+            planId: "plan-m",
+            name: "Mensual",
+            type: Constants.PaymentPlanType.SUBSCRIPTION,
+            subscriptionMonthlyAmount: 10,
+        },
+        {
+            planId: "plan-y",
+            name: "Anual",
+            type: Constants.PaymentPlanType.SUBSCRIPTION,
+            subscriptionYearlyAmount: 100,
+        },
+    ] as any;
+
+    function renderWithParam(preselectedPlan?: string) {
+        const product: Product = {
+            id: "p1",
+            name: "Membresia",
+            type: Constants.MembershipEntityType.COMMUNITY,
+            defaultPaymentPlanId: "plan-y",
+        };
+        render(
+            <Checkout
+                product={product}
+                paymentPlans={twoPlans}
+                includedProducts={[]}
+                type={product.type}
+                id="p1"
+                preselectedPlan={preselectedPlan}
+            />,
+        );
+        return screen.getAllByTestId("plan-card");
+    }
+
+    it("preselects the plan from the param while the badge stays on the default", async () => {
+        renderWithParam("mensual");
+        await waitFor(() => {
+            const cards = screen.getAllByTestId("plan-card");
+            expect(cards[0].dataset.selected).toBe("true");
+        });
+        const cards = screen.getAllByTestId("plan-card");
+        expect(cards[1].dataset.selected).toBe("false");
+        expect(cards[0].dataset.recommended).toBe("false");
+        expect(cards[1].dataset.recommended).toBe("true");
+    });
+
+    it("preselects the default plan without a param", async () => {
+        renderWithParam(undefined);
+        await waitFor(() => {
+            const cards = screen.getAllByTestId("plan-card");
+            expect(cards[1].dataset.selected).toBe("true");
+        });
+    });
+});
 
 describe("Checkout", () => {
     beforeAll(() => {
