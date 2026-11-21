@@ -1,5 +1,5 @@
-import { Constants, PaymentPlan } from "@courselit/common-models";
-import { resolvePlan } from "../resolve-plan";
+import { Constants } from "@courselit/common-models";
+import { resolvePlan, ResolvablePlan } from "../resolve-plan";
 
 const { PaymentPlanType } = Constants;
 
@@ -8,21 +8,21 @@ const monthly = {
     name: "Mensual",
     type: PaymentPlanType.SUBSCRIPTION,
     subscriptionMonthlyAmount: 10,
-} as PaymentPlan;
+} as ResolvablePlan;
 const yearly = {
     planId: "plan-y",
     name: "Anual",
     type: PaymentPlanType.SUBSCRIPTION,
     subscriptionYearlyAmount: 100,
-} as PaymentPlan;
+} as ResolvablePlan;
 const archived = {
     planId: "plan-old",
     name: "Antiguo",
     type: PaymentPlanType.SUBSCRIPTION,
     subscriptionYearlyAmount: 50,
     archived: true,
-};
-const plans = [monthly, yearly, archived];
+} as ResolvablePlan;
+const plans: ResolvablePlan[] = [monthly, yearly, archived];
 
 describe("resolvePlan", () => {
     it("matches an exact planId", () => {
